@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>明厨亮灶专项行动 · 六榕所辖区跟进汇报</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  /* 隐藏滚动条：保证截图宽度=视口宽度，两侧留空对称（滚轮滚动不受影响） */
+  html { scrollbar-width: none; -ms-overflow-style: none; }
+  html::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  body {
+    font-family: "Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif;
+    background: #f0f4f8;
+    color: #1a202c;
+    padding: 12px;
+  }
+  .container { max-width: 820px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1e6cb6, #2b8fd6);
+    color: #fff;
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(30,108,182,0.15);
+    text-align: center;
+  }
+  .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 5px; letter-spacing: 1px; }
+  .header .meta { font-size: 14px; opacity: 0.9; display: flex; justify-content: center; gap: 24px; }
+
+  /* Summary Cards */
+  .summary { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .card {
+    flex: 1;
+    min-width: 110px;
+    border-radius: 8px;
+    padding: 12px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    color: #fff;
+  }
+  .card .label { font-size: 14px; margin-bottom: 2px; font-weight: 600; opacity: 0.95; }
+  .card .value { font-size: 36px; font-weight: 800; line-height: 1.1; }
+  .card .pct { font-size: 11px; margin-top: 2px; opacity: 0.85; }
+  .card.online { background: linear-gradient(135deg, #10b981, #34d399); }
+  .card.installed { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+  .card.accepted { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+  .card.contact { background: linear-gradient(135deg, #64748b, #94a3b8); }
+  .card.rejected { background: linear-gradient(135deg, #ef4444, #f87171); }
+
+  /* Completion Rate Bar - 分母固定50 */
+  .rate-bar {
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .rate-bar .rate-label { font-size: 14px; color: #475569; white-space: nowrap; font-weight: 600; }
+  .rate-bar .bar-bg {
+    flex: 1;
+    height: 18px;
+    background: #e2e8f0;
+    border-radius: 9px;
+    overflow: hidden;
+  }
+  .rate-bar .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    border-radius: 9px;
+    transition: width 0.6s ease;
+  }
+  .rate-bar .rate-text { font-size: 16px; font-weight: 700; color: #10b981; white-space: nowrap; }
+
+  /* Section */
+  .section {
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+  .section-header {
+    padding: 7px 12px;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .section-header .dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .section-header .count {
+    font-size: 14px; font-weight: 700; color: #64748b;
+    margin-left: auto;
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 2px 10px;
+  }
+  .section.online .section-header .count { color: #15803d; background: #dcfce7; }
+  .section.rejected .section-header .count { color: #b91c1c; background: #fee2e2; }
+  .section.installed .section-header .count { color: #1d4ed8; background: #dbeafe; }
+  .section.accepted .section-header .count { color: #b45309; background: #fef3c7; }
+  .section.contact .section-header .count { color: #475569; background: #e2e8f0; }
+  .section.online .section-header { background: #f0fdf4; color: #15803d; }
+  .section.online .dot { background: #10b981; }
+  .section.rejected .section-header { background: #fef2f2; color: #b91c1c; }
+  .section.rejected .dot { background: #ef4444; }
+  .section.installed .section-header { background: #eff6ff; color: #1d4ed8; }
+  .section.installed .dot { background: #3b82f6; }
+  .section.accepted .section-header { background: #fffbeb; color: #b45309; }
+  .section.accepted .dot { background: #f59e0b; }
+  .section.contact .section-header { background: #f8fafc; color: #475569; }
+  .section.contact .dot { background: #64748b; }
+
+  /* 已上线 - 网格布局 */
+  .grid-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0;
+  }
+  .grid-item {
+    padding: 4px 10px;
+    border-bottom: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+  }
+  .grid-item .g-name {
+    font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 1px;
+    line-height: 1.3; white-space: nowrap;
+  }
+  .grid-item .g-license {
+    font-size: 12px; color: #475569; line-height: 1.3; font-weight: 500; white-space: nowrap;
+  }
+
+  /* 其他分类 - 双列卡片布局 */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+  }
+  .card-item {
+    padding: 4px 10px;
+    border-bottom: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-item-left { flex: 1 1 auto; min-width: 0; }
+  .card-item-right { flex: 0 0 auto; max-width: 62%; min-width: 0; }
+  .card-item .c-name {
+    font-size: 14px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 1px;
+    white-space: nowrap;
+  }
+  .card-item .c-license {
+    font-size: 12px; color: #475569; line-height: 1.3; font-weight: 500; white-space: nowrap;
+  }
+  .nw { white-space: nowrap; }
+  /* 单行适配后仍超宽的条目：收窄右侧说明列，给左侧名称让位 */
+  .card-item.narrow-right .card-item-right { max-width: 38%; }
+  .card-item .c-desc {
+    font-size: 13px; color: #475569; line-height: 1.35;
+  }
+  .card-item .c-desc.empty { color: #cbd5e1; font-style: italic; }
+  .card-item .c-license.empty { color: #cbd5e1; font-style: italic; }
+
+  /* 用户拒绝 - 右侧拒绝原因垂直居中 */
+  .card-item.desc-center {
+    align-items: center;
+  }
+
+  /* 外卖厨房标签 */
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #c2410c;
+    background: #ffedd5;
+    border: 1px solid #fdba74;
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-left: 6px;
+    vertical-align: 1px;
+    white-space: nowrap;
+  }
+
+  /* 手机端 */
+  @media (max-width: 640px) {
+    body { padding: 6px; }
+    .header { padding: 10px 14px; }
+    .header h1 { font-size: 17px; }
+    .header .meta { font-size: 12px; gap: 12px; flex-wrap: wrap; }
+    .summary { gap: 6px; }
+    .card { min-width: calc(50% - 3px); padding: 10px 6px; border-radius: 6px; }
+    .card .label { font-size: 12px; }
+    .card .value { font-size: 28px; }
+    .card .pct { font-size: 10px; }
+    .rate-bar { flex-wrap: wrap; gap: 6px; padding: 8px 12px; }
+    .rate-bar .rate-label { font-size: 12px; }
+    .rate-bar .rate-text { font-size: 14px; }
+    .section-header { font-size: 15px; padding: 8px 12px; }
+    .section-header .count { font-size: 12px; padding: 2px 10px; }
+    .grid-list { grid-template-columns: 1fr; }
+    .grid-item { border-right: none; padding: 5px 12px; }
+    .grid-item .g-name { font-size: 13px; }
+    .grid-item .g-license { font-size: 11px; }
+    .card-grid { grid-template-columns: 1fr; }
+    .card-item { border-right: none; padding: 4px 10px; flex-direction: column; gap: 2px; }
+    .card-item-left { flex: none; }
+    .card-item-right { max-width: none; }
+    .card-item .c-name { font-size: 13px; }
+    .card-item .c-license { font-size: 11px; }
+    .card-item .c-desc { font-size: 12px; }
+    .tag { font-size: 10px; margin-left: 4px; padding: 0 4px; }
+  }
+
+  .footer {
+    text-align: center;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>明厨亮灶专项行动 · 六榕所辖区跟进汇报</h1>
+    <div class="meta">
+      <span>数据更新：2026-09-18</span>
+      <span>总商户数：61</span>
+    </div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+  <div class="rate-bar" id="rateBar"></div>
+  <div id="sections"></div>
+
+  <div class="footer">明厨亮灶专项行动 · 六榕所辖区 · 中山五营服中心</div>
+</div>
+
+<script>
+const DATA = [
+  {name:"广州市丽日餐饮管理有限公司（咖啡店）",license:"广州市丽日餐饮管理有限公司",status:"已上线",desc:""},
+  {name:"广州市越秀区森景美食店（三餐美食）",license:"广州市越秀区森景美食店（三餐美食）",status:"已上线",desc:""},
+  {name:"广州越秀区盘福玲又珑餐厅（玲又珑餐厅）",license:"广州越秀区盘福玲又珑餐厅",status:"已上线",desc:""},
+  {name:"广州市越秀区阅点食品店（今早绿点）",license:"广州市越秀区阅点食品店（今早绿点）",status:"已上线",desc:""},
+  {name:"广州市越秀区蜜糖埕食品店（个体工商户）",license:"广州市越秀区蜜糖埕食品店（个体工商户）",status:"已上线",desc:""},
+  {name:"多美丽炸鸡",license:"广州市越秀区美丽餐饮店",status:"已上线",desc:""},
+  {name:"农耕记",license:"广州市越秀区湘湘美食店",status:"已上线",desc:""},
+  {name:"如轩砂锅粥",license:"广州市越秀区星轩砂锅粥店",status:"已上线",desc:""},
+  {name:"麦稻中式健康餐",license:"广州市越秀区麦稻中式餐厅",status:"已上线",desc:""},
+  {name:"永利来餐室",license:"广州市越秀区烨鲜生餐饮店",status:"已上线",desc:""},
+  {name:"蜀渝拌·重庆凉拌菜（百灵路店）",license:"广州市越秀区中琴凉菜店（个体工商户）",status:"已上线",desc:""},
+  {name:"广州市越秀区市壹餐饮店（个体工商户）（荔银肠粉）",license:"广州市越秀区市壹餐饮店（个体工商户）",status:"已上线",desc:""},
+  {name:"越秀区布论兹茶饮店",license:"越秀区布论兹茶饮店",status:"已上线",desc:""},
+  {name:"惠吉东路15号咖啡店",license:"广州市越秀区蜜糖埕食品店（个体工商户）",status:"已上线",desc:""},
+  {name:"广州市越秀区卿予美甲店",license:"广州市越秀区卿予美甲店(个体工商户)",status:"已上线",desc:""},
+  {name:"广州市越秀区爽口凉拌菜馆",license:"广州市越秀区爽口凉拌菜馆（个体工商户）",status:"已上线",desc:""},
+  {name:"广州市越秀区坡里小吃店",license:"广州市越秀区坡里小吃店",status:"已上线",desc:""},
+  {name:"创善烧鹅",license:"广州市越秀区百煜餐饮店（个体工商户）",status:"已上线",desc:""},
+  {name:"炭火匠人",license:"广州市越秀区万欢千膳餐饮店（个体工商户）",status:"已上线",desc:""},
+  {name:"西华美食·老广烧腊(百灵路店)",license:"广州市西华美食品有限公司第一分店",status:"已上线",desc:""},
+  {name:"盘福路荔银肠粉店",license:"广州港旗餐饮管理有限公司",status:"已上线",desc:""},
+  {name:"荔银肠粉(广州市第一人民医院店)",license:"广州市越秀区市壹餐饮店（个体工商户）",status:"已上线",desc:""},
+  {name:"小东北",license:"广州市越秀区咱家饺子坊",status:"已上线",desc:""},
+  {name:"广州市越秀区味鲜小馆",license:"广州市越秀区味鲜小馆（个体工商户）",status:"已上线",desc:""},
+  {name:"顺德牛花猪杂粥",license:"广州市越秀区捌记美食店（个体工商户）",status:"已上线",desc:""},
+  {name:"布豆咖啡",license:"广州市越秀区布豆食品店（个体工商户）",status:"已上线",desc:""},
+  // 用户拒绝
+  {name:"吞口熊",license:"广州市越秀区江南粥铺",status:"用户拒绝",desc:"已关门"},
+  {name:"叫了只炸鸡",license:"广州市越秀区童杨食品店",status:"用户拒绝",desc:""},
+  {name:"广州港意头餐饮服务工作室",license:"广州港意头餐饮服务工作室（个人独资）",status:"用户拒绝",desc:"已拒绝"},
+  {name:"广州市越秀区盛裕餐饮店",license:"广州市越秀区盛裕餐饮店",status:"用户拒绝",desc:"客户反映已经有人帮他装了"},
+  {name:"王富贵（广州）餐饮管理服务有限公司",license:"王富贵（广州）餐饮管理服务有限公司",status:"用户拒绝",desc:"已转荔湾跟进"},
+  {name:"肥俊牛肉饭（超味无脂面馆）",license:"",status:"用户拒绝",desc:"已转荔湾跟进"},
+  {name:"华辉拉肠",license:"",status:"用户拒绝",desc:"等集团统一通知"},
+  {name:"广州市越秀区遇见老袁馅饼店",license:"广州市越秀区遇见老袁馅饼店（个体工商户）",status:"用户拒绝",desc:"医国街全部要求装再装"},
+  // 已安装
+  {name:"威笑鸡煲档",license:"广州市越秀区威笑鸡煲档（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
+  {name:"窄巷口",license:"广州市越秀区华记美食店(个体工商户)",status:"已安装",desc:"食品安全证没下来"},
+  {name:"广潮仔",license:"",status:"已安装",desc:"食品安全证没下来"},
+  {name:"广州市越秀区滋味水饺店（个体工商户）",license:"广州市越秀区滋味水饺店（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
+  {name:"广州市越秀区福华顺美食店（个体工商户）",license:"广州市越秀区福华顺美食店（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
+  {name:"元气饭堂",license:"广州市豪哥烧腊有限公司",status:"已安装",desc:"需荔湾整改，已填待推流"},
+  {name:"新泰乐",license:"",status:"已安装",desc:"已安装待推流"},
+  {name:"广州市越秀区六榕街水啦餐饮服务店(个体工商户)",license:"广州市越秀区六榕街水啦餐饮服务店（个体工商户）",status:"已安装",desc:"已安装待推流"},
+  // 已受理
+  {name:"太太茶餐厅",license:"广州市越秀区靓太美食店（个体工商户）",status:"已受理",desc:"待装机"},
+  {name:"牛山爷嫩牛五方",license:"广州市越秀区牛山爷嫩牛五方小吃店",status:"已受理",desc:"摄像头9-19号才到，已填信息"},
+  {name:"将相王者·黄焖鸡米饭（纪念堂店）",license:"广州市越秀区芋米餐饮店（个体工商户）",status:"已受理",desc:"摄像头9-19号才到，已填信息"},
+  {name:"虾首富",license:"广州市越秀区沐铄美食店（个体工商户）",status:"已受理",desc:""},
+  {name:"蒸武门",license:"广州市蒸武门越来富餐饮有限公司",status:"已受理",desc:"未装机，客户摄像头有问题"},
+  {name:"潮汕壹粉道",license:"广州市越秀区峰玲小食档（个体工商户）",status:"已受理",desc:"9-18装机，食品安全证没下来"},
+  // 已联系
+  {name:"囍膳小厨 养生汤",license:"广州粤喜膳餐饮管理有限公司",status:"已联系",desc:"9-17号1点下单"},
+  {name:"得宝未来城咖啡店",license:"",status:"已联系",desc:"未找到原有宽带接入号，9-16号二次上门"},
+  {name:"得宝未来城河南酒家",license:"",status:"已联系",desc:"已联系河南老板，回复要咨询一下"},
+  {name:"禧缘金宴",license:"",status:"已联系",desc:"工程部已装好摄像头，待联系下单"},
+  {name:"迎宾馆",license:"",status:"已联系",desc:"告知需三家报价走流程，目前无法实现"},
+  {name:"美满湛江鸡",license:"",status:"已联系",desc:"9月16号二次联系，要求明确答复，回复要跟股东商量后未回复"},
+  {name:"越秀渔村",license:"",status:"已联系",desc:"11月装修后办理"},
+  {name:"盘福大厦咖啡店",license:"",status:"已联系",desc:"9月16号二次联系，要求明确答复"},
+  {name:"新文记",license:"",status:"已联系",desc:"确定办理等老板过来办时间待定"},
+  {name:"铭记吃鸡",license:"",status:"已联系",desc:"9月16号二次联系，要求明确答复"},
+  {name:"东川饭局（盘福路）",license:"",status:"已联系",desc:""},
+  {name:"东川饭局（百灵路）",license:"",status:"已联系",desc:""},
+  {name:"铭记吃鸡（盘福路）",license:"",status:"已联系",desc:"下午去市监所"}
+];
+
+const TARGET = 50; // 完成率目标值
+
+// 外卖厨房商户名单（始终打标，不受进展状态影响）
+const TAKEOUT_KITCHENS = ["太太茶餐厅","吞口熊","多美丽炸鸡","叫了只炸鸡","农耕记","如轩砂锅粥","麦稻中式健康餐","永利来餐室","牛山爷嫩牛五方","囍膳小厨 养生汤","将相王者·黄焖鸡米饭（纪念堂店）","虾首富"];
+
+function tagHtml(name) {
+  return TAKEOUT_KITCHENS.includes(name) ? '<span class="tag">外卖厨房</span>' : '';
+}
+
+const CATEGORIES = [
+  { key:"已上线", cls:"online", label:"已上线", useGrid:true },
+  { key:"用户拒绝", cls:"rejected", label:"用户拒绝", useGrid:false, descHeader:"拒绝原因", descCenter:true },
+  { key:"已安装", cls:"installed", label:"已安装", useGrid:false, descHeader:"进度说明" },
+  { key:"已受理", cls:"accepted", label:"已受理", useGrid:false, descHeader:"进度说明" },
+  { key:"已联系", cls:"contact", label:"已联系", useGrid:false, descHeader:"进度说明" }
+];
+
+function renderCardGrid(items, descHeader, descCenter) {
+  let html = '';
+  items.forEach(d => {
+    const descText = d.desc || '—';
+    const descClass = d.desc ? '' : 'empty';
+    const licText = d.license || '—';
+    const licClass = d.license ? '' : 'empty';
+    html += '<div class="card-item' + (descCenter ? ' desc-center' : '') + '">'
+      + '<div class="card-item-left">'
+      + '<div class="c-name">'+esc(d.name)+tagHtml(d.name)+'</div>'
+      + '<div class="c-license '+licClass+'">'+licText+'</div>'
+      + '</div>'
+      + '<div class="card-item-right">'
+      + '<div class="c-desc '+descClass+'">'+descText+'</div>'
+      + '</div>'
+      + '</div>';
+  });
+  return '<div class="card-grid">'+html+'</div>';
+}
+
+function esc(s) { return s ? s : ''; }
+
+// Render summary cards
+const summaryEl = document.getElementById('summary');
+CATEGORIES.forEach(cat => {
+  const count = DATA.filter(d => d.status === cat.key).length;
+  summaryEl.innerHTML += '<div class="card '+cat.cls+'"><div class="label">'+cat.label+'</div><div class="value">'+count+'</div><div class="pct">占比 '+((count/DATA.length)*100).toFixed(1)+'%</div></div>';
+});
+
+// Render completion rate bar - 分母固定50
+const onlineCount = DATA.filter(d => d.status === "已上线").length;
+const ratePct = ((onlineCount / TARGET) * 100).toFixed(1);
+const barWidth = Math.min(parseFloat(ratePct), 100);
+document.getElementById('rateBar').innerHTML = '<span class="rate-label">上线完成率</span><div class="bar-bg"><div class="bar-fill" style="width:'+barWidth+'%"></div></div><span class="rate-text">'+onlineCount+'/'+TARGET+'（'+ratePct+'%）</span>';
+
+// Render sections
+const sectionsEl = document.getElementById('sections');
+CATEGORIES.forEach(cat => {
+  const items = DATA.filter(d => d.status === cat.key);
+  if (items.length === 0) return;
+
+  let body = '';
+  if (cat.useGrid) {
+    // 已上线 - 网格布局，只展示客户名称和营业执照
+    let gridItems = '';
+    items.forEach(d => {
+      gridItems += '<div class="grid-item"><div class="g-name">'+esc(d.name)+tagHtml(d.name)+'</div><div class="g-license">'+(d.license||'—')+'</div></div>';
+    });
+    body = '<div class="grid-list">'+gridItems+'</div>';
+  } else {
+    // 其他分类 - 双列卡片布局
+    body = renderCardGrid(items, cat.descHeader, cat.descCenter);
+  }
+
+  sectionsEl.innerHTML += '<div class="section '+cat.cls+'"><div class="section-header"><span class="dot"></span><span>'+cat.label+'</span><span class="count">共 '+items.length+' 户</span></div>'+body+'</div>';
+});
+
+// —— 单行适配：名称/执照超宽时智能缩小字号保持一行，避免换行或裁切 ——
+function fitSingleLine(el, minSize) {
+  if (!el) return true;
+  if (el.scrollWidth <= el.clientWidth + 0.5) return true;
+  let size = parseFloat(getComputedStyle(el).fontSize);
+  while (el.scrollWidth > el.clientWidth + 0.5 && size > minSize) {
+    size -= 0.5;
+    el.style.fontSize = size + 'px';
+  }
+  if (el.scrollWidth > el.clientWidth + 0.5) {
+    let ls = 0;
+    while (el.scrollWidth > el.clientWidth + 0.5 && ls > -0.6) {
+      ls -= 0.1;
+      el.style.letterSpacing = ls + 'px';
+    }
+  }
+  return el.scrollWidth <= el.clientWidth + 0.5;
+}
+function resetFit(el) {
+  if (!el) return;
+  el.style.fontSize = '';
+  el.style.letterSpacing = '';
+}
+function fitCardItem(item) {
+  const nameEl = item.querySelector('.c-name');
+  const licEl = item.querySelector('.c-license');
+  item.classList.remove('narrow-right');
+  resetFit(nameEl); resetFit(licEl);
+  let ok = fitSingleLine(nameEl, 10) & fitSingleLine(licEl, 9.5);
+  if (!ok) {
+    // 名称缩到下限仍放不下：收窄右侧说明列（说明允许换行），重新适配
+    item.classList.add('narrow-right');
+    resetFit(nameEl); resetFit(licEl);
+    fitSingleLine(nameEl, 10);
+    fitSingleLine(licEl, 9.5);
+  }
+}
+document.querySelectorAll('.card-item').forEach(fitCardItem);
+document.querySelectorAll('.grid-item').forEach(function(item) {
+  fitSingleLine(item.querySelector('.g-name'), 10);
+  fitSingleLine(item.querySelector('.g-license'), 9.5);
+});
+// 底部落款：窄屏放不下时智能缩字号保持一行
+fitSingleLine(document.querySelector('.footer'), 12);
+</script>
+</body>
+</html>
