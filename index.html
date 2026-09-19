@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -256,6 +256,7 @@
 
 <script>
 const DATA = [
+  // 已上线 (26)
   {name:"广州市丽日餐饮管理有限公司（咖啡店）",license:"广州市丽日餐饮管理有限公司",status:"已上线",desc:""},
   {name:"广州市越秀区森景美食店（三餐美食）",license:"广州市越秀区森景美食店（三餐美食）",status:"已上线",desc:""},
   {name:"广州越秀区盘福玲又珑餐厅（玲又珑餐厅）",license:"广州越秀区盘福玲又珑餐厅",status:"已上线",desc:""},
@@ -282,33 +283,33 @@ const DATA = [
   {name:"广州市越秀区味鲜小馆",license:"广州市越秀区味鲜小馆（个体工商户）",status:"已上线",desc:""},
   {name:"顺德牛花猪杂粥",license:"广州市越秀区捌记美食店（个体工商户）",status:"已上线",desc:""},
   {name:"布豆咖啡",license:"广州市越秀区布豆食品店（个体工商户）",status:"已上线",desc:""},
-  // 用户拒绝
+  // 用户拒绝 (9)
   {name:"吞口熊",license:"广州市越秀区江南粥铺",status:"用户拒绝",desc:"已关门"},
   {name:"叫了只炸鸡",license:"广州市越秀区童杨食品店",status:"用户拒绝",desc:""},
+  {name:"囍膳小厨 养生汤",license:"广州粤喜膳餐饮管理有限公司",status:"用户拒绝",desc:"二次联系后客户拒绝办理"},
   {name:"广州港意头餐饮服务工作室",license:"广州港意头餐饮服务工作室（个人独资）",status:"用户拒绝",desc:"已拒绝"},
   {name:"广州市越秀区盛裕餐饮店",license:"广州市越秀区盛裕餐饮店",status:"用户拒绝",desc:"客户反映已经有人帮他装了"},
   {name:"王富贵（广州）餐饮管理服务有限公司",license:"王富贵（广州）餐饮管理服务有限公司",status:"用户拒绝",desc:"已转荔湾跟进"},
-  {name:"肥俊牛肉饭（超味无脂面馆）",license:"",status:"用户拒绝",desc:"已转荔湾跟进"},
+  {name:"肥俊牛肉饭",license:"",status:"用户拒绝",desc:"已转荔湾跟进"},
   {name:"华辉拉肠",license:"",status:"用户拒绝",desc:"等集团统一通知"},
   {name:"广州市越秀区遇见老袁馅饼店",license:"广州市越秀区遇见老袁馅饼店（个体工商户）",status:"用户拒绝",desc:"医国街全部要求装再装"},
-  // 已安装
+  // 已安装 (10)
+  {name:"虾首富",license:"广州市越秀区沐铄美食店（个体工商户）",status:"已安装",desc:""},
   {name:"威笑鸡煲档",license:"广州市越秀区威笑鸡煲档（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
   {name:"窄巷口",license:"广州市越秀区华记美食店(个体工商户)",status:"已安装",desc:"食品安全证没下来"},
   {name:"广潮仔",license:"",status:"已安装",desc:"食品安全证没下来"},
-  {name:"广州市越秀区滋味水饺店（个体工商户）",license:"广州市越秀区滋味水饺店（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
-  {name:"广州市越秀区福华顺美食店（个体工商户）",license:"广州市越秀区福华顺美食店（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
+  {name:"潮汕壹粉道",license:"广州市越秀区峰玲小食档（个体工商户）",status:"已安装",desc:"9-19装机，食品安全证没下来"},
+  {name:"广州市越秀区滋味水饺店",license:"广州市越秀区滋味水饺店（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
+  {name:"广州市越秀区福华顺美食店",license:"广州市越秀区福华顺美食店（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
   {name:"元气饭堂",license:"广州市豪哥烧腊有限公司",status:"已安装",desc:"需荔湾整改，已填待推流"},
   {name:"新泰乐",license:"",status:"已安装",desc:"已安装待推流"},
-  {name:"广州市越秀区六榕街水啦餐饮服务店(个体工商户)",license:"广州市越秀区六榕街水啦餐饮服务店（个体工商户）",status:"已安装",desc:"已安装待推流"},
-  {name:"潮汕壹粉道",license:"广州市越秀区峰玲小食档（个体工商户）",status:"已安装",desc:"9-19装机，食品安全证没下来"},
-  // 已受理
+  {name:"广州市越秀区六榕街水啦餐饮服务店",license:"广州市越秀区六榕街水啦餐饮服务店（个体工商户）",status:"已安装",desc:"已安装待推流"},
+  // 已受理 (4)
   {name:"太太茶餐厅",license:"广州市越秀区靓太美食店（个体工商户）",status:"已受理",desc:"待装机"},
   {name:"牛山爷嫩牛五方",license:"广州市越秀区牛山爷嫩牛五方小吃店",status:"已受理",desc:"摄像头9-19号才到，已填信息"},
   {name:"将相王者·黄焖鸡米饭（纪念堂店）",license:"广州市越秀区芋米餐饮店（个体工商户）",status:"已受理",desc:"摄像头9-19号才到，已填信息"},
-  {name:"虾首富",license:"广州市越秀区沐铄美食店（个体工商户）",status:"已受理",desc:""},
   {name:"蒸武门",license:"广州市蒸武门越来富餐饮有限公司",status:"已受理",desc:"未装机，客户摄像头有问题"},
-  // 已联系（联系中归并）
-  {name:"囍膳小厨 养生汤",license:"广州粤喜膳餐饮管理有限公司",status:"已联系",desc:"9-17号1点下单"},
+  // 已联系 (12)
   {name:"得宝未来城咖啡店",license:"",status:"已联系",desc:"未找到原有宽带接入号，9-16号二次上门"},
   {name:"得宝未来城河南酒家",license:"",status:"已联系",desc:"已联系河南老板，回复要咨询一下"},
   {name:"禧缘金宴",license:"",status:"已联系",desc:"工程部已装好摄像头，待联系下单"},
@@ -318,9 +319,9 @@ const DATA = [
   {name:"盘福大厦咖啡店",license:"",status:"已联系",desc:"9月16号二次联系，要求明确答复"},
   {name:"新文记",license:"",status:"已联系",desc:"确定办理等老板过来办时间待定"},
   {name:"铭记吃鸡",license:"",status:"已联系",desc:"9月16号二次联系，要求明确答复"},
-  {name:"东川饭局",license:"",status:"已联系",desc:""},
-  {name:"东川饭局",license:"",status:"已联系",desc:""},
-  {name:"铭记吃鸡",license:"",status:"已联系",desc:"下午去市监所"}
+  {name:"东川饭局（盘福路）",license:"",status:"已联系",desc:""},
+  {name:"东川饭局（百灵路）",license:"",status:"已联系",desc:""},
+  {name:"铭记吃鸡（盘福路）",license:"",status:"已联系",desc:"下午去市监所"}
 ];
 
 const TARGET = 50; // 完成率目标值
