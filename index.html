@@ -36,14 +36,13 @@
     flex: 1;
     min-width: 110px;
     border-radius: 8px;
-    padding: 12px 10px;
+    padding: 7px 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     text-align: center;
     color: #fff;
   }
-  .card .label { font-size: 14px; margin-bottom: 2px; font-weight: 600; opacity: 0.95; }
-  .card .value { font-size: 36px; font-weight: 800; line-height: 1.1; }
-  .card .pct { font-size: 11px; margin-top: 2px; opacity: 0.85; }
+  .card .label { font-size: 13px; font-weight: 600; opacity: 0.95; }
+  .card .value { font-size: 30px; font-weight: 800; line-height: 1.1; margin-top: 1px; }
   .card.online { background: linear-gradient(135deg, #10b981, #34d399); }
   .card.installed { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
   .card.accepted { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
@@ -76,6 +75,26 @@
     transition: width 0.6s ease;
   }
   .rate-bar .rate-text { font-size: 16px; font-weight: 700; color: #10b981; white-space: nowrap; }
+
+  /* Search Bar */
+  .search-bar { margin-bottom: 10px; }
+  .search-bar input {
+    width: 100%;
+    padding: 9px 14px;
+    font-size: 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .search-bar input:focus {
+    border-color: #2b8fd6;
+    box-shadow: 0 0 0 2px rgba(43,143,214,0.1);
+  }
+  .search-bar input::placeholder { color: #94a3b8; }
 
   /* Section */
   .section {
@@ -201,10 +220,9 @@
     .summary { display: flex; flex-wrap: wrap; gap: 6px; }
     .summary .card.online { flex: 1 1 100%; min-width: 100%; }
     .summary .card:not(.online) { flex: 1 1 calc(50% - 3px); min-width: calc(50% - 3px); }
-    .card { padding: 10px 6px; border-radius: 6px; text-align: center; }
-    .card .label { font-size: 12px; }
-    .card .value { font-size: 28px; }
-    .card .pct { font-size: 10px; }
+    .card { padding: 6px 6px; border-radius: 6px; text-align: center; }
+    .card .label { font-size: 11px; }
+    .card .value { font-size: 22px; }
     .rate-bar { flex-wrap: wrap; gap: 6px; padding: 8px 12px; }
     .rate-bar .rate-label { font-size: 12px; }
     .rate-bar .rate-text { font-size: 14px; }
@@ -215,9 +233,11 @@
     .grid-item .g-name { font-size: 13px; }
     .grid-item .g-license { font-size: 11px; }
     /* 其他分类：手机端保持双列，不居中，名称不换行，说明可换行 */
-    .card-grid { grid-template-columns: repeat(2, 1fr); }
-    .card-item { border-right: 1px solid #d1d5db; padding: 4px 8px; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left; }
-    .card-item:nth-child(2n) { border-right: none; }
+    .search-bar input { padding: 8px 12px; font-size: 13px; }
+    /* 其他分类：手机端 flex-wrap，超屏卡片自动占满一行 */
+    .card-grid { display: flex; flex-wrap: wrap; }
+    .card-item { flex: 1 1 50%; min-width: 0; border-right: 1px solid #d1d5db; padding: 4px 8px; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left; }
+    .card-item.full-width { flex-basis: 100%; border-right: none; }
     .card-item-left { flex: none; width: 100%; }
     .card-item-right { max-width: none; width: 100%; }
     .card-item .c-name { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -249,6 +269,9 @@
 
   <div class="summary" id="summary"></div>
   <div class="rate-bar" id="rateBar"></div>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="营业执照名字" autocomplete="off" />
+  </div>
   <div id="sections"></div>
 
   <div class="footer">明厨亮灶专项行动 · 六榕所辖区 · 中山五营服中心</div>
@@ -367,7 +390,7 @@ function esc(s) { return s ? s : ''; }
 const summaryEl = document.getElementById('summary');
 CATEGORIES.forEach(cat => {
   const count = DATA.filter(d => d.status === cat.key).length;
-  summaryEl.innerHTML += '<div class="card '+cat.cls+'"><div class="label">'+cat.label+'</div><div class="value">'+count+'</div><div class="pct">占比 '+((count/DATA.length)*100).toFixed(1)+'%</div></div>';
+  summaryEl.innerHTML += '<div class="card '+cat.cls+'"><div class="label">'+cat.label+' 占比'+((count/DATA.length)*100).toFixed(1)+'%</div><div class="value">'+count+'</div></div>';
 });
 
 // Render completion rate bar - 分母固定50
@@ -375,28 +398,6 @@ const onlineCount = DATA.filter(d => d.status === "已上线").length;
 const ratePct = ((onlineCount / TARGET) * 100).toFixed(1);
 const barWidth = Math.min(parseFloat(ratePct), 100);
 document.getElementById('rateBar').innerHTML = '<span class="rate-label">上线完成率</span><div class="bar-bg"><div class="bar-fill" style="width:'+barWidth+'%"></div></div><span class="rate-text">'+onlineCount+'/'+TARGET+'（'+ratePct+'%）</span>';
-
-// Render sections
-const sectionsEl = document.getElementById('sections');
-CATEGORIES.forEach(cat => {
-  const items = DATA.filter(d => d.status === cat.key);
-  if (items.length === 0) return;
-
-  let body = '';
-  if (cat.useGrid) {
-    // 已上线 - 网格布局，只展示客户名称和营业执照
-    let gridItems = '';
-    items.forEach(d => {
-      gridItems += '<div class="grid-item"><div class="g-name">'+esc(d.name)+tagHtml(d.name)+'</div><div class="g-license">'+(d.license||'—')+'</div></div>';
-    });
-    body = '<div class="grid-list">'+gridItems+'</div>';
-  } else {
-    // 其他分类 - 双列卡片布局
-    body = renderCardGrid(items, cat.descHeader, cat.descCenter);
-  }
-
-  sectionsEl.innerHTML += '<div class="section '+cat.cls+'"><div class="section-header"><span class="dot"></span><span>'+cat.label+'</span><span class="count">共 '+items.length+' 户</span></div>'+body+'</div>';
-});
 
 // —— 单行适配：名称/执照超宽时智能缩小字号保持一行，避免换行或裁切 ——
 function fitSingleLine(el, minSize) {
@@ -428,20 +429,96 @@ function fitCardItem(item) {
   resetFit(nameEl); resetFit(licEl);
   let ok = fitSingleLine(nameEl, 10) & fitSingleLine(licEl, 9.5);
   if (!ok) {
-    // 名称缩到下限仍放不下：收窄右侧说明列（说明允许换行），重新适配
     item.classList.add('narrow-right');
     resetFit(nameEl); resetFit(licEl);
     fitSingleLine(nameEl, 10);
     fitSingleLine(licEl, 9.5);
   }
 }
-document.querySelectorAll('.card-item').forEach(fitCardItem);
-document.querySelectorAll('.grid-item').forEach(function(item) {
-  fitSingleLine(item.querySelector('.g-name'), 10);
-  fitSingleLine(item.querySelector('.g-license'), 9.5);
+
+// —— 手机端：卡片超屏自动换行为1列 ——
+function adjustMobileLayout() {
+  if (window.innerWidth > 640) return;
+  var items = Array.from(document.querySelectorAll('.card-item'));
+  items.forEach(function(item) {
+    item.classList.remove('full-width');
+    item.style.borderRight = '';
+  });
+  document.body.offsetHeight; // force reflow
+  var col = 0;
+  items.forEach(function(item) {
+    var nameEl = item.querySelector('.c-name');
+    var licEl = item.querySelector('.c-license');
+    var truncated = false;
+    if (nameEl && nameEl.scrollWidth > nameEl.clientWidth + 0.5) truncated = true;
+    if (licEl && licEl.scrollWidth > licEl.clientWidth + 0.5) truncated = true;
+    if (truncated) {
+      item.classList.add('full-width');
+      resetFit(nameEl); resetFit(licEl);
+      fitSingleLine(nameEl, 10);
+      fitSingleLine(licEl, 9.5);
+      item.style.borderRight = 'none';
+      col = 0;
+    } else {
+      if (col === 1) { item.style.borderRight = 'none'; col = 0; }
+      else { item.style.borderRight = '1px solid #d1d5db'; col = 1; }
+    }
+  });
+}
+
+// —— 渲染分类区块（支持搜索过滤） ——
+function renderSections(filterFn) {
+  const sectionsEl = document.getElementById('sections');
+  sectionsEl.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    let items = DATA.filter(d => d.status === cat.key);
+    if (filterFn) items = items.filter(filterFn);
+    if (items.length === 0) return;
+
+    let body = '';
+    if (cat.useGrid) {
+      let gridItems = '';
+      items.forEach(d => {
+        gridItems += '<div class="grid-item"><div class="g-name">'+esc(d.name)+tagHtml(d.name)+'</div><div class="g-license">'+(d.license||'—')+'</div></div>';
+      });
+      body = '<div class="grid-list">'+gridItems+'</div>';
+    } else {
+      body = renderCardGrid(items, cat.descHeader, cat.descCenter);
+    }
+
+    sectionsEl.innerHTML += '<div class="section '+cat.cls+'"><div class="section-header"><span class="dot"></span><span>'+cat.label+'</span><span class="count">共 '+items.length+' 户</span></div>'+body+'</div>';
+  });
+
+  if (filterFn && sectionsEl.children.length === 0) {
+    sectionsEl.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;font-size:14px;">未找到匹配的商户</div>';
+  }
+
+  document.querySelectorAll('.card-item').forEach(fitCardItem);
+  document.querySelectorAll('.grid-item').forEach(function(item) {
+    fitSingleLine(item.querySelector('.g-name'), 10);
+    fitSingleLine(item.querySelector('.g-license'), 9.5);
+  });
+  adjustMobileLayout();
+  fitSingleLine(document.querySelector('.footer'), 12);
+}
+
+// —— 搜索功能 ——
+const searchInput = document.getElementById('searchInput');
+let searchTimer = null;
+searchInput.addEventListener('input', function() {
+  clearTimeout(searchTimer);
+  var q = this.value.trim().toLowerCase();
+  searchTimer = setTimeout(function() {
+    if (!q) { renderSections(null); return; }
+    renderSections(function(d) {
+      return d.name.toLowerCase().indexOf(q) >= 0 ||
+             (d.license && d.license.toLowerCase().indexOf(q) >= 0);
+    });
+  }, 150);
 });
-// 底部落款：窄屏放不下时智能缩字号保持一行
-fitSingleLine(document.querySelector('.footer'), 12);
+
+// —— 首次渲染 ——
+renderSections(null);
 </script>
 </body>
 </html>
