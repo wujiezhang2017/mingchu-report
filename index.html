@@ -185,7 +185,7 @@
   /* 单行适配后仍超宽的条目：收窄右侧说明列，给左侧名称让位 */
   .card-item.narrow-right .card-item-right { max-width: 38%; }
   .card-item .c-desc {
-    font-size: 13px; color: #475569; line-height: 1.35;
+    font-size: 13px; color: #475569; line-height: 1.35; text-align: right;
   }
   .card-item .c-desc.empty { color: #cbd5e1; font-style: italic; }
   .card-item .c-license.empty { color: #cbd5e1; font-style: italic; }
@@ -242,7 +242,7 @@
     .card-item-right { max-width: none; width: 100%; }
     .card-item .c-name { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .card-item .c-license { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-item .c-desc { font-size: 11px; white-space: normal; word-break: break-all; }
+    .card-item .c-desc { font-size: 11px; white-space: normal; word-break: break-all; text-align: right; }
     .card-item.desc-center { align-items: flex-start; }
     .tag { font-size: 10px; margin-left: 4px; padding: 0 4px; }
   }
@@ -270,7 +270,7 @@
   <div class="summary" id="summary"></div>
   <div class="rate-bar" id="rateBar"></div>
   <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="营业执照名字" autocomplete="off" />
+    <input type="text" id="searchInput" placeholder="输入营业执照名字即可搜索，支持模糊搜索" autocomplete="off" />
   </div>
   <div id="sections"></div>
 
