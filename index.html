@@ -280,17 +280,19 @@
 
 <script>
 const DATA = [
-  // 已上线 (26)
+  // 已上线（28）
   {name:"广州市丽日餐饮管理有限公司（咖啡店）",license:"广州市丽日餐饮管理有限公司",status:"已上线",desc:""},
   {name:"广州市越秀区森景美食店（三餐美食）",license:"广州市越秀区森景美食店（三餐美食）",status:"已上线",desc:""},
-  {name:"广州越秀区盘福玲又珑餐厅（玲又珑餐厅）",license:"广州越秀区盘福玲又珑餐厅",status:"已上线",desc:""},
+  {name:"广州越秀区盘福玲又又珑餐厅（玲又珑餐厅）",license:"广州越秀区盘福玲又珑餐厅",status:"已上线",desc:""},
   {name:"广州市越秀区阅点食品店（今早绿点）",license:"广州市越秀区阅点食品店（今早绿点）",status:"已上线",desc:""},
   {name:"广州市越秀区蜜糖埕食品店（个体工商户）",license:"广州市越秀区蜜糖埕食品店（个体工商户）",status:"已上线",desc:""},
+  {name:"太太茶餐厅",license:"广州市越秀区靓太美食店（个体工商户）",status:"已上线",desc:""},
   {name:"多美丽炸鸡",license:"广州市越秀区美丽餐饮店",status:"已上线",desc:""},
   {name:"农耕记",license:"广州市越秀区湘湘美食店",status:"已上线",desc:""},
   {name:"如轩砂锅粥",license:"广州市越秀区星轩砂锅粥店",status:"已上线",desc:""},
   {name:"麦稻中式健康餐",license:"广州市越秀区麦稻中式餐厅",status:"已上线",desc:""},
   {name:"永利来餐室",license:"广州市越秀区烨鲜生餐饮店",status:"已上线",desc:""},
+  {name:"厚切猪扒咖喱饭（虾首富）",license:"广州市越秀区沐铄美食店（个体工商户）",status:"已上线",desc:""},
   {name:"蜀渝拌·重庆凉拌菜（百灵路店）",license:"广州市越秀区中琴凉菜店（个体工商户）",status:"已上线",desc:""},
   {name:"荔银肠粉百灵路店",license:"广州市越秀区市壹餐饮店（个体工商户）",status:"已上线",desc:""},
   {name:"越秀区布论兹茶饮店",license:"越秀区布论兹茶饮店",status:"已上线",desc:""},
@@ -317,9 +319,7 @@ const DATA = [
   {name:"肥俊牛肉饭",license:"",status:"用户拒绝",desc:"已转荔湾跟进"},
   {name:"华辉拉肠",license:"",status:"用户拒绝",desc:"等集团统一通知"},
   {name:"广州市越秀区遇见老袁馅饼店",license:"广州市越秀区遇见老袁馅饼店（个体工商户）",status:"用户拒绝",desc:"医国街全部要求装再装"},
-  // 已安装 (11)
-  {name:"太太茶餐厅",license:"广州市越秀区靓太美食店（个体工商户）",status:"已安装",desc:"已安装待推流"},
-  {name:"虾首富",license:"广州市越秀区沐铄美食店（个体工商户）",status:"已安装",desc:"已安装待推流"},
+  // 已安装 (9)
   {name:"威笑鸡煲档",license:"广州市越秀区威笑鸡煲档（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
   {name:"窄巷口",license:"广州市越秀区华记美食店(个体工商户)",status:"已安装",desc:"食品安全证没下来"},
   {name:"广潮仔",license:"",status:"已安装",desc:"食品安全证没下来"},
@@ -356,7 +356,7 @@ const DATA = [
 const TARGET = 50; // 完成率目标值
 
 // 外卖厨房商户名单（始终打标，不受进展状态影响）
-const TAKEOUT_KITCHENS = ["太太茶餐厅","吞口熊","多美丽炸鸡","叫了只炸鸡","农耕记","如轩砂锅粥","麦稻中式健康餐","永利来餐室","牛山爷嫩牛五方","囍膳小厨 养生汤","将相王者·黄焖鸡米饭（纪念堂店）","虾首富"];
+const TAKEOUT_KITCHENS = ["太太茶餐厅","吞口熊","多美丽炸鸡","叫了只炸鸡","农耕记","如轩砂锅粥","麦稻中式健康餐","永利来餐室","牛山爷嫩牛五方","囍膳小厨 养生汤","将相王者·黄焖鸡米饭（纪念堂店）","厚切猪扒咖喱饭（虾首富）"];
 
 function tagHtml(name) {
   return TAKEOUT_KITCHENS.includes(name) ? '<span class="tag">外卖厨房</span>' : '';
