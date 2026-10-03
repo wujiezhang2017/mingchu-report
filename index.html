@@ -281,6 +281,36 @@
     color: #334155;
     white-space: nowrap;
   }
+
+  /* A4打印图片选择弹窗（毛玻璃） */
+  .modal-mask {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-mask.show { display: flex; }
+  .modal {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 12px;
+    padding: 18px 20px 16px;
+    max-width: 420px; width: 100%;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  }
+  .modal h3 { font-size: 16px; color: #0f172a; margin-bottom: 12px; text-align: center; }
+  .modal .modal-item {
+    display: block; padding: 11px 14px; margin: 8px 0;
+    background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px;
+    text-decoration: none; color: #1d4ed8; font-size: 14px; font-weight: 600;
+  }
+  .modal .modal-item:hover { background: #dbeafe; }
+  .modal .modal-tip { font-size: 12px; color: #64748b; margin: 10px 0 12px; text-align: center; }
+  .modal .modal-close {
+    width: 100%; padding: 10px; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, #1e6cb6, #2b8fd6); color: #fff;
+    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
 </style>
 <script src="xlsx.full.min.js"></script>
 </head>
@@ -306,6 +336,16 @@
   <div id="sections"></div>
 
   <div class="footer">明厨亮灶专项行动 · 六榕所辖区 · 中山五营服中心</div>
+</div>
+
+<!-- A4打印图片选择弹窗 -->
+<div class="modal-mask" id="printModal">
+  <div class="modal">
+    <h3>A4打印图片（共<span id="modalPageCount">0</span>页）</h3>
+    <div id="modalList"></div>
+    <div class="modal-tip">点击任一页可在新窗口打开图片，电脑右键“图片另存为”、手机长按可保存</div>
+    <button class="modal-close" id="modalClose">关闭</button>
+  </div>
 </div>
 
 <script>
@@ -557,7 +597,11 @@ renderSections(null);
 // ============================================================
 // 导出EXCEL：将六榕所全部商铺明细（内嵌数据快照）生成xlsx
 // ============================================================
-document.getElementById('btnExcel').addEventListener('click', function () {
+// 导出EXCEL：优先下载预生成的真实xlsx文件（兼容微信/下载工具）；
+// 文件不存在时降级为前端即时生成
+// ============================================================
+var STATIC_XLSX = '明厨亮灶专项行动·六榕所辖区跟进汇报.xlsx'; // 预生成真实文件名
+function exportExcelFrontend() {
   if (typeof XLSX === 'undefined') {
     alert('导出组件未加载（xlsx.full.min.js），请刷新页面后重试');
     return;
@@ -574,7 +618,21 @@ document.getElementById('btnExcel').addEventListener('click', function () {
   ws['!cols'] = [{ wch: 6 }, { wch: 40 }, { wch: 45 }, { wch: 10 }, { wch: 32 }];
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '六榕所跟进');
-  XLSX.writeFile(wb, '明厨亮灶专项行动·六榕所辖区跟进汇报.xlsx');
+  XLSX.writeFile(wb, STATIC_XLSX);
+}
+document.getElementById('btnExcel').addEventListener('click', function () {
+  fetch(STATIC_XLSX, { method: 'HEAD' }).then(function (r) {
+    if (r.ok) {
+      var a = document.createElement('a');
+      a.href = STATIC_XLSX;
+      a.download = STATIC_XLSX;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      exportExcelFrontend();
+    }
+  }).catch(function () { exportExcelFrontend(); });
 });
 
 // ============================================================
@@ -761,7 +819,12 @@ function downloadBlob(blob, filename) {
   }, 500);
 }
 
-document.getElementById('btnPrint').addEventListener('click', function () {
+// ============================================================
+// 导出A4打印图片：优先弹出预生成真实图片列表（兼容微信/下载工具）；
+// 文件不存在时降级为前端即时生成
+// ============================================================
+var STATIC_A4 = ['明厨亮灶-六榕所-A4-第1页.png','明厨亮灶-六榕所-A4-第2页.png','明厨亮灶-六榕所-A4-第3页.png']; // 生成汇报时替换为实际图片文件名数组，如 ['明厨亮灶-六榕所-A4-第1页.png',...]
+function exportPrintImagesFrontend() {
   var pages = buildA4Pages();
   if (pages.length === 0) { alert('暂无数据可导出'); return; }
   pages.forEach(function (pg, idx) {
@@ -774,6 +837,29 @@ document.getElementById('btnPrint').addEventListener('click', function () {
       if (blob) downloadBlob(blob, '明厨亮灶-六榕所-A4-第' + (idx + 1) + '页.png');
     }, 'image/png');
   });
+}
+function openPrintModal() {
+  var pages = buildA4Pages();
+  var html = '';
+  STATIC_A4.forEach(function (f, i) {
+    var cats = (pages[i] ? pages[i].cats.map(function (s) { return s.cat + ' ' + s.items.length + '户'; }).join('、') : '');
+    html += '<a class="modal-item" href="' + f + '" target="_blank" download="' + f + '">第' + (i + 1) + '页：' + cats + '</a>';
+  });
+  document.getElementById('modalPageCount').textContent = STATIC_A4.length;
+  document.getElementById('modalList').innerHTML = html;
+  document.getElementById('printModal').classList.add('show');
+}
+document.getElementById('modalClose').addEventListener('click', function () {
+  document.getElementById('printModal').classList.remove('show');
+});
+document.getElementById('printModal').addEventListener('click', function (e) {
+  if (e.target === this) this.classList.remove('show');
+});
+document.getElementById('btnPrint').addEventListener('click', function () {
+  if (!STATIC_A4 || STATIC_A4.length === 0) { exportPrintImagesFrontend(); return; }
+  fetch(STATIC_A4[0], { method: 'HEAD' }).then(function (r) {
+    if (r.ok) { openPrintModal(); } else { exportPrintImagesFrontend(); }
+  }).catch(function () { exportPrintImagesFrontend(); });
 });
 </script>
 </body>
