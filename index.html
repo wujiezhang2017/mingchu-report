@@ -96,6 +96,28 @@
   }
   .search-bar input::placeholder { color: #94a3b8; }
 
+  /* 搜索行：输入框 + 导出按钮 */
+  .search-row { display: flex; gap: 8px; align-items: stretch; }
+  .search-row input { flex: 1; min-width: 0; }
+  .btn-export {
+    flex-shrink: 0;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+    font-family: inherit;
+    white-space: nowrap;
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  .btn-export:hover { filter: brightness(1.06); }
+  .btn-export:active { transform: translateY(1px); }
+  .btn-excel { background: linear-gradient(135deg, #16a34a, #22c55e); }
+  .btn-print { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+
   /* Section */
   .section {
     background: #fff;
@@ -234,6 +256,9 @@
     .grid-item .g-license { font-size: 11px; }
     /* 其他分类：手机端保持双列，不居中，名称不换行，说明可换行 */
     .search-bar input { padding: 8px 12px; font-size: 13px; }
+    .search-row { flex-wrap: wrap; }
+    .search-row input { flex: 1 1 100%; }
+    .btn-export { flex: 1 1 auto; padding: 8px 10px; font-size: 13px; }
     /* 其他分类：手机端 flex-wrap，超屏卡片自动占满一行 */
     .card-grid { display: flex; flex-wrap: wrap; }
     .card-item { flex: 1 1 50%; min-width: 0; border-right: 1px solid #d1d5db; padding: 4px 8px; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left; }
@@ -257,21 +282,26 @@
     white-space: nowrap;
   }
 </style>
+<script src="xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="container">
   <div class="header">
     <h1>明厨亮灶专项行动 · 六榕所辖区跟进汇报</h1>
     <div class="meta">
-      <span>数据更新：2026-09-22</span>
-      <span>总商户数：65</span>
+      <span>数据更新：2026-10-03</span>
+      <span>总商户数：64</span>
     </div>
   </div>
 
   <div class="summary" id="summary"></div>
   <div class="rate-bar" id="rateBar"></div>
   <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="输入营业执照名字即可搜索，支持模糊搜索" autocomplete="off" />
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="输入营业执照名字即可搜索，支持模糊搜索" autocomplete="off" />
+      <button class="btn-export btn-excel" id="btnExcel" title="导出六榕所全部商铺明细为Excel文件">导出EXCEL</button>
+      <button class="btn-export btn-print" id="btnPrint" title="按分类生成A4打印图片（自动分页、内容少的相邻分类合并）">导出打印图片</button>
+    </div>
   </div>
   <div id="sections"></div>
 
@@ -280,40 +310,39 @@
 
 <script>
 const DATA = [
-  // 已上线（28）
+  // 已上线（31）
   {name:"广州市丽日餐饮管理有限公司（咖啡店）",license:"广州市丽日餐饮管理有限公司",status:"已上线",desc:""},
   {name:"广州市越秀区森景美食店（三餐美食）",license:"广州市越秀区森景美食店（三餐美食）",status:"已上线",desc:""},
   {name:"广州越秀区盘福玲又珑餐厅（玲又珑餐厅）",license:"广州越秀区盘福玲又珑餐厅",status:"已上线",desc:""},
   {name:"广州市越秀区阅点食品店（今早绿点）",license:"广州市越秀区阅点食品店（今早绿点）",status:"已上线",desc:""},
-  {name:"广州市越秀区蜜糖埕食品店（个体工商户）",license:"广州市越秀区蜜糖埕食品店（个体工商户）",status:"已上线",desc:""},
   {name:"太太茶餐厅",license:"广州市越秀区靓太美食店（个体工商户）",status:"已上线",desc:""},
   {name:"多美丽炸鸡",license:"广州市越秀区美丽餐饮店",status:"已上线",desc:""},
   {name:"农耕记",license:"广州市越秀区湘湘美食店",status:"已上线",desc:""},
   {name:"如轩砂锅粥",license:"广州市越秀区星轩砂锅粥店",status:"已上线",desc:""},
   {name:"麦稻中式健康餐",license:"广州市越秀区麦稻中式餐厅",status:"已上线",desc:""},
   {name:"永利来餐室",license:"广州市越秀区烨鲜生餐饮店",status:"已上线",desc:""},
+  {name:"牛山爷嫩牛五方",license:"广州市越秀区牛山爷嫩牛五方小吃店",status:"已上线",desc:"已安装待推流"},
   {name:"厚切猪扒咖喱饭（虾首富）",license:"广州市越秀区沐铄美食店（个体工商户）",status:"已上线",desc:""},
   {name:"蜀渝拌·重庆凉拌菜（百灵路店）",license:"广州市越秀区中琴凉菜店（个体工商户）",status:"已上线",desc:""},
-  {name:"荔银肠粉百灵路店",license:"广州市越秀区市壹餐饮店（个体工商户）",status:"已上线",desc:""},
-  {name:"越秀区布论兹茶饮店",license:"越秀区布论兹茶饮店",status:"已上线",desc:""},
+  {name:"越秀区布论兹茶饮店",license:"广州市越秀区布论兹茶饮店(个人独资)",status:"已上线",desc:""},
   {name:"惠吉东路15号咖啡店",license:"广州市越秀区蜜糖埕食品店（个体工商户）",status:"已上线",desc:""},
   {name:"广州市越秀区卿予美甲店",license:"广州市越秀区卿予美甲店(个体工商户)",status:"已上线",desc:""},
   {name:"广州市越秀区爽口凉拌菜馆",license:"广州市越秀区爽口凉拌菜馆（个体工商户）",status:"已上线",desc:""},
   {name:"广州市越秀区坡里小吃店",license:"广州市越秀区坡里小吃店",status:"已上线",desc:""},
   {name:"创善烧鹅",license:"广州市越秀区百煜餐饮店（个体工商户）",status:"已上线",desc:""},
-  {name:"炭火匠人",license:"广州市越秀区万欢千膳餐饮店（个体工商户）",status:"已上线",desc:""},
+  {name:"炭火匠人",license:"广州市越秀区万欢千膳餐饮店（个体工商户）",status:"已上线",desc:"电信已推流但市监局看不到，核查中"},
   {name:"西华美食·老广烧腊(百灵路店)",license:"广州市西华美食品有限公司第一分店",status:"已上线",desc:""},
   {name:"盘福路荔银肠粉店",license:"广州港旗餐饮管理有限公司",status:"已上线",desc:""},
-  {name:"荔银肠粉(广州市第一人民医院店)",license:"广州市越秀区市壹餐饮店（个体工商户）",status:"已上线",desc:""},
   {name:"小东北",license:"广州市越秀区咱家饺子坊",status:"已上线",desc:""},
   {name:"广州市越秀区味鲜小馆",license:"广州市越秀区味鲜小馆（个体工商户）",status:"已上线",desc:""},
-  {name:"广州市越秀区滋味水饺店",license:"广州市越秀区滋味水饺店（个体工商户）",status:"已上线",desc:""},
+  {name:"广州市越秀区滋味水饺店",license:"广州市越秀区滋味水饺店（个体工商户）",status:"已上线",desc:"电信已推流但市监局看不到，核查中"},
   {name:"广州市越秀区福华顺美食店",license:"广州市越秀区福华顺美食店（个体工商户）",status:"已上线",desc:""},
-  {name:"元气饭堂",license:"广州市豪哥烧腊有限公司",status:"已上线",desc:""},
+  {name:"元气饭堂",license:"广州市豪哥烧腊有限公司",status:"已上线",desc:"电信已推流但市监局看不到，核查中"},
+  {name:"新泰乐",license:"广州市越秀区盘福新泰乐菜馆",status:"已上线",desc:""},
   {name:"顺德牛花猪杂粥",license:"广州市越秀区捌记美食店（个体工商户）",status:"已上线",desc:""},
   {name:"布豆咖啡",license:"广州市越秀区布豆食品店（个体工商户）",status:"已上线",desc:""},
-  {name:"新泰乐",license:"广州市越秀区盘福新泰乐菜馆",status:"已上线",desc:""},
-  // 用户拒绝 (10)
+  {name:"广州市越秀区市壹餐饮店（个体工商户）（荔银肠粉）",license:"",status:"已上线",desc:""},
+  // 用户拒绝 (9)
   {name:"吞口熊",license:"广州市越秀区江南粥铺",status:"用户拒绝",desc:"已关门"},
   {name:"叫了只炸鸡",license:"广州市越秀区童杨食品店",status:"用户拒绝",desc:""},
   {name:"囍膳小厨 养生汤",license:"广州粤喜膳餐饮管理有限公司",status:"用户拒绝",desc:"二次联系后客户拒绝办理"},
@@ -323,14 +352,14 @@ const DATA = [
   {name:"肥俊牛肉饭",license:"",status:"用户拒绝",desc:"已转荔湾跟进"},
   {name:"华辉拉肠",license:"",status:"用户拒绝",desc:"等集团统一通知"},
   {name:"广州市越秀区遇见老袁馅饼店",license:"广州市越秀区遇见老袁馅饼店（个体工商户）",status:"用户拒绝",desc:"医国街全部要求装再装"},
-  {name:"铭记吃鸡",license:"",status:"用户拒绝",desc:"客户未同意办理，待跟进"},
-  // 已安装 (6)
-  {name:"牛山爷嫩牛五方",license:"广州市越秀区牛山爷嫩牛五方小吃店",status:"已安装",desc:"已安装待推流"},
+  // 已安装 (7)
   {name:"威笑鸡煲档",license:"广州市越秀区威笑鸡煲档（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
-  {name:"窄巷口",license:"广州市越秀区华记美食店(个体工商户)",status:"已安装",desc:"食品安全证没下来"},
-  {name:"广潮仔",license:"",status:"已安装",desc:"食品安全证没下来"},
-  {name:"潮汕壹粉道",license:"广州市越秀区峰玲小食档（个体工商户）",status:"已安装",desc:"食品安全证没下来"},
+  {name:"窄巷口",license:"广州市越秀区华记美食店(个体工商户)",status:"已安装",desc:"已填资料待推流"},
+  {name:"广潮仔",license:"广州市越秀区远记广潮仔海鲜馆（个体工商户）",status:"已安装",desc:"已填资料待推流"},
+  {name:"潮汕壹粉道",license:"广州市越秀区峰玲小食档（个体工商户）",status:"已安装",desc:"已填资料待推流"},
+  {name:"铭记吃鸡",license:"",status:"已安装",desc:""},
   {name:"广州市越秀区六榕街水啦餐饮服务店",license:"广州市越秀区六榕街水啦餐饮服务店（个体工商户）",status:"已安装",desc:"食品安全证没下来"},
+  {name:"将军东路16号106号铺",license:"",status:"已安装",desc:""},
   // 已受理 (2)
   {name:"将相王者·黄焖鸡米饭（纪念堂店）",license:"广州市越秀区芋米餐饮店（个体工商户）",status:"已受理",desc:"摄像头未到，已填信息"},
   {name:"蒸武门",license:"广州市蒸武门越来富餐饮有限公司",status:"已受理",desc:"未装机，客户摄像头有问题"},
@@ -343,8 +372,8 @@ const DATA = [
   {name:"越秀渔村",license:"",status:"已联系",desc:"11月装修后办理"},
   {name:"盘福大厦咖啡店",license:"",status:"已联系",desc:"待走第二次"},
   {name:"新文记",license:"",status:"已联系",desc:"等老板过来后再联系，暂无下文"},
-  {name:"东川饭局（盘福路）",license:"",status:"已联系",desc:"要中秋后联系"},
-  {name:"东川饭局（百灵路）",license:"",status:"已联系",desc:"要中秋后联系"},
+  {name:"东川饭局",license:"",status:"已联系",desc:"要中秋后联系"},
+  {name:"东川饭局",license:"",status:"已联系",desc:"要中秋后联系"},
   {name:"广州市越秀区天咖扉扒房",license:"广州市越秀区天咖扉扒房",status:"已联系",desc:"待跟进"},
   {name:"田果小巷",license:"广州果乐园管理有限公司",status:"已联系",desc:"待跟进"},
   {name:"慕茶山",license:"广东慕茶山管理有限公司越秀区惠吉西第二分公司",status:"已联系",desc:"待跟进"},
@@ -524,6 +553,228 @@ searchInput.addEventListener('input', function() {
 
 // —— 首次渲染 ——
 renderSections(null);
+
+// ============================================================
+// 导出EXCEL：将六榕所全部商铺明细（内嵌数据快照）生成xlsx
+// ============================================================
+document.getElementById('btnExcel').addEventListener('click', function () {
+  if (typeof XLSX === 'undefined') {
+    alert('导出组件未加载（xlsx.full.min.js），请刷新页面后重试');
+    return;
+  }
+  var header = ['序号', '客户名称', '营业执照名称', '当前状态', '进度/拒绝说明'];
+  var rows = [header];
+  CATEGORIES.forEach(function (cat) {
+    var items = DATA.filter(function (d) { return d.status === cat.key; });
+    items.forEach(function (d, i) {
+      rows.push([i + 1, d.name, d.license || '', d.status, d.desc || '']);
+    });
+  });
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 6 }, { wch: 40 }, { wch: 45 }, { wch: 10 }, { wch: 32 }];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '六榕所跟进');
+  XLSX.writeFile(wb, '明厨亮灶专项行动·六榕所辖区跟进汇报.xlsx');
+});
+
+// ============================================================
+// 导出A4打印图片：按分类绘制A4竖版PNG，自动分页+相邻分类合并
+// ============================================================
+var A4_W = 1240, A4_H = 1754;          // 150dpi A4竖版
+var HEAD_H = 92, CAT_H = 56, ROW_H = 62, FOOT_H = 52, PAGE_GAP = 30;
+var PAGE_TITLE = '明厨亮灶专项行动 · 六榕所辖区跟进汇报';
+var metaText = (function () {
+  var m = document.querySelector('.header .meta');
+  return m ? m.textContent.replace(/\s+/g, ' ').trim() : '';
+})();
+var PAGE_FOOT = '明厨亮灶专项行动 · 六榕所辖区 · 中山五营服中心';
+var CAT_COLORS = {
+  '已上线': '#10b981', '用户拒绝': '#ef4444', '已安装': '#3b82f6',
+  '已受理': '#f59e0b', '已联系': '#64748b'
+};
+
+// 构建页面：每个分类内逐户排布，放不下开新页；分类头+首行放得下则并入当前页
+function buildA4Pages() {
+  var pages = [];
+  var cur = { cats: [] };
+  var used = HEAD_H + FOOT_H; // 标题区+页脚预留
+  CATEGORIES.forEach(function (cat) {
+    var items = DATA.filter(function (d) { return d.status === cat.key; });
+    if (items.length === 0) return;
+    // 当前页剩余不足"分类头+首行"且页内已有内容 → 开新页
+    if (cur.cats.length > 0 && used + CAT_H + ROW_H > A4_H - FOOT_H - PAGE_GAP) {
+      pages.push(cur); cur = { cats: [] }; used = HEAD_H + FOOT_H;
+    }
+    var i = 0;
+    while (i < items.length) {
+      if (used + ROW_H > A4_H - FOOT_H - PAGE_GAP) {
+        pages.push(cur); cur = { cats: [] }; used = HEAD_H + FOOT_H;
+      }
+      if (cur.cats.length === 0 || cur.cats[cur.cats.length - 1].cat !== cat.key) {
+        cur.cats.push({ cat: cat.key, items: [] });
+        used += CAT_H;
+      }
+      cur.cats[cur.cats.length - 1].items.push(items[i]);
+      used += ROW_H;
+      i++;
+    }
+  });
+  if (cur.cats.length > 0) pages.push(cur);
+  return pages;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function truncateText(ctx, text, maxWidth) {
+  if (!text) return '';
+  var t = String(text);
+  if (ctx.measureText(t).width <= maxWidth) return t;
+  var lo = 0, hi = t.length;
+  while (lo < hi) {
+    var mid = (lo + hi + 1) >> 1;
+    if (ctx.measureText(t.slice(0, mid) + '…').width <= maxWidth) lo = mid;
+    else hi = mid - 1;
+  }
+  return t.slice(0, lo) + '…';
+}
+
+function drawA4Page(ctx, page, pageIdx, total) {
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, A4_W, A4_H);
+
+  // 顶部标题栏
+  var grad = ctx.createLinearGradient(0, 0, A4_W, 0);
+  grad.addColorStop(0, '#1e6cb6');
+  grad.addColorStop(1, '#2b8fd6');
+  ctx.fillStyle = grad;
+  roundRect(ctx, 14, 14, A4_W - 28, HEAD_H - 20, 10);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 26px "Microsoft YaHei","PingFang SC",sans-serif';
+  ctx.fillText(PAGE_TITLE, A4_W / 2, 48);
+  ctx.font = '14px "Microsoft YaHei","PingFang SC",sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  var metaLine = metaText + '    第 ' + pageIdx + ' / ' + total + ' 页';
+  ctx.fillText(metaLine, A4_W / 2, 78);
+
+  var y = HEAD_H + 8;
+  ctx.textAlign = 'left';
+  page.cats.forEach(function (sec) {
+      var cat = sec.cat;
+      // 分类头
+      ctx.fillStyle = CAT_COLORS[cat] || '#64748b';
+      ctx.beginPath();
+      ctx.arc(28, y + 16, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 19px "Microsoft YaHei","PingFang SC",sans-serif';
+      ctx.fillText(cat + '（' + sec.items.length + '户）', 44, y + 22);
+      y += CAT_H;
+
+      // 商户行
+      sec.items.forEach(function (d, i) {
+        var top = y;
+        // 行底分隔线
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(24, top + ROW_H - 1);
+        ctx.lineTo(A4_W - 24, top + ROW_H - 1);
+        ctx.stroke();
+
+        // 序号
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '13px "Microsoft YaHei","PingFang SC",sans-serif';
+        ctx.fillText(String(i + 1), 28, top + 22);
+
+        // 左侧：客户名称+执照（外卖商户预留标签空间，避免标签压字）
+        var nameX = 56;
+        var rightW = 380;
+        var isTakeout = TAKEOUT_KITCHENS.indexOf(d.name) >= 0;
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 16px "Microsoft YaHei","PingFang SC",sans-serif';
+        var nameMaxW = A4_W - nameX - rightW - 16 - (isTakeout ? 78 : 0);
+        var nameText = truncateText(ctx, d.name, nameMaxW);
+        ctx.fillText(nameText, nameX, top + 22);
+
+        // 外卖厨房标签（橙色小标签）
+        if (isTakeout) {
+          var tagText = '外卖厨房';
+          var tagW2 = 62;
+          var tagX = nameX + ctx.measureText(nameText).width + 8;
+          ctx.fillStyle = '#ffedd5';
+          roundRect(ctx, tagX, top + 8, tagW2, 20, 4);
+          ctx.fill();
+          ctx.fillStyle = '#c2410c';
+          ctx.font = 'bold 11px "Microsoft YaHei","PingFang SC",sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(tagText, tagX + tagW2 / 2, top + 22);
+          ctx.textAlign = 'left';
+        }
+
+        // 执照名称
+        ctx.fillStyle = '#475569';
+        ctx.font = '13px "Microsoft YaHei","PingFang SC",sans-serif';
+        var licText = d.license || '—';
+        ctx.fillText(truncateText(ctx, licText, A4_W - nameX - rightW - 16), nameX, top + 44);
+
+        // 右侧：进度说明/拒绝原因
+        ctx.fillStyle = '#475569';
+        ctx.font = '14px "Microsoft YaHei","PingFang SC",sans-serif';
+        var descText = d.desc || '—';
+        ctx.fillStyle = d.desc ? '#475569' : '#cbd5e1';
+        ctx.textAlign = 'right';
+        ctx.fillText(truncateText(ctx, descText, rightW), A4_W - 28, top + 26);
+        ctx.textAlign = 'left';
+
+y += ROW_H;
+      });
+    });
+
+  // 页脚
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '13px "Microsoft YaHei","PingFang SC",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(PAGE_FOOT, A4_W / 2, A4_H - 22);
+  ctx.textAlign = 'left';
+}
+
+function downloadBlob(blob, filename) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function () {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 500);
+}
+
+document.getElementById('btnPrint').addEventListener('click', function () {
+  var pages = buildA4Pages();
+  if (pages.length === 0) { alert('暂无数据可导出'); return; }
+  pages.forEach(function (pg, idx) {
+    var canvas = document.createElement('canvas');
+    canvas.width = A4_W;
+    canvas.height = A4_H;
+    var ctx = canvas.getContext('2d');
+    drawA4Page(ctx, pg, idx + 1, pages.length);
+    canvas.toBlob(function (blob) {
+      if (blob) downloadBlob(blob, '明厨亮灶-六榕所-A4-第' + (idx + 1) + '页.png');
+    }, 'image/png');
+  });
+});
 </script>
 </body>
 </html>
