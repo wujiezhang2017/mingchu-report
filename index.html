@@ -640,7 +640,7 @@ document.getElementById('btnExcel').addEventListener('click', function () {
 // 导出A4打印图片：按分类绘制A4竖版PNG，自动分页+相邻分类合并
 // ============================================================
 var A4_W = 1240, A4_H = 1754;          // 150dpi A4竖版
-var HEAD_H = 92, CAT_H = 56, ROW_H = 62, FOOT_H = 52, PAGE_GAP = 30;
+var HEAD_H = 100, CAT_H = 64, ROW_H = 72, ROW_H_2COL = 78, FOOT_H = 56, PAGE_GAP = 30;
 var PAGE_TITLE = '明厨亮灶专项行动 · 六榕所辖区跟进汇报';
 var metaText = (function () {
   var m = document.querySelector('.header .meta');
@@ -652,33 +652,47 @@ var CAT_COLORS = {
   '已受理': '#f59e0b', '已联系': '#64748b'
 };
 
-// 构建页面：每个分类内逐户排布，放不下开新页；分类头+首行放得下则并入当前页
+// 构建页面：已上线单页双列排满；其他分类单列，放不下开新页、相邻合并
 function buildA4Pages() {
   var pages = [];
-  var cur = { cats: [] };
-  var used = HEAD_H + FOOT_H; // 标题区+页脚预留
   CATEGORIES.forEach(function (cat) {
     var items = DATA.filter(function (d) { return d.status === cat.key; });
     if (items.length === 0) return;
-    // 当前页剩余不足"分类头+首行"且页内已有内容 → 开新页
-    if (cur.cats.length > 0 && used + CAT_H + ROW_H > A4_H - FOOT_H - PAGE_GAP) {
-      pages.push(cur); cur = { cats: [] }; used = HEAD_H + FOOT_H;
-    }
-    var i = 0;
-    while (i < items.length) {
-      if (used + ROW_H > A4_H - FOOT_H - PAGE_GAP) {
-        pages.push(cur); cur = { cats: [] }; used = HEAD_H + FOOT_H;
+    if (cat.key === '已上线') {
+      // 已上线：单独一页，双列排布
+      pages.push({ cats: [{ cat: cat.key, items: items, twoCol: true }] });
+    } else if (cat.key === '已联系') {
+      // 已联系：单独一页（单列），不跟前面挤，避免分拆到两页
+      pages.push({ cats: [{ cat: cat.key, items: items, twoCol: false }] });
+    } else {
+      // 其他分类：单列，逐行排入当前页（可与前页剩余空间合并）
+      var cur = pages.length > 0 ? pages[pages.length - 1] : null;
+      if (!cur || cur.cats[cur.cats.length - 1].twoCol) {
+        cur = { cats: [] }; pages.push(cur);
       }
-      if (cur.cats.length === 0 || cur.cats[cur.cats.length - 1].cat !== cat.key) {
-        cur.cats.push({ cat: cat.key, items: [] });
-        used += CAT_H;
+      var used = HEAD_H + FOOT_H;
+      cur.cats.forEach(function (s) {
+        used += CAT_H + (s.items.length * ROW_H);
+      });
+      // 当前页放不下分类头+首行 → 开新页
+      if (cur.cats.length > 0 && used + CAT_H + ROW_H > A4_H - FOOT_H - PAGE_GAP) {
+        cur = { cats: [] }; pages.push(cur); used = HEAD_H + FOOT_H;
       }
-      cur.cats[cur.cats.length - 1].items.push(items[i]);
-      used += ROW_H;
-      i++;
+      var i = 0;
+      while (i < items.length) {
+        if (used + ROW_H > A4_H - FOOT_H - PAGE_GAP) {
+          cur = { cats: [] }; pages.push(cur); used = HEAD_H + FOOT_H;
+        }
+        if (cur.cats.length === 0 || cur.cats[cur.cats.length - 1].cat !== cat.key) {
+          cur.cats.push({ cat: cat.key, items: [], twoCol: false });
+          used += CAT_H;
+        }
+        cur.cats[cur.cats.length - 1].items.push(items[i]);
+        used += ROW_H;
+        i++;
+      }
     }
   });
-  if (cur.cats.length > 0) pages.push(cur);
   return pages;
 }
 
@@ -718,28 +732,88 @@ function drawA4Page(ctx, page, pageIdx, total) {
   ctx.fill();
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
-  ctx.font = 'bold 26px "Microsoft YaHei","PingFang SC",sans-serif';
-  ctx.fillText(PAGE_TITLE, A4_W / 2, 48);
-  ctx.font = '14px "Microsoft YaHei","PingFang SC",sans-serif';
+  ctx.font = 'bold 30px "Microsoft YaHei","PingFang SC",sans-serif';
+  ctx.fillText(PAGE_TITLE, A4_W / 2, 52);
+  ctx.font = '16px "Microsoft YaHei","PingFang SC",sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.92)';
   var metaLine = metaText + '    第 ' + pageIdx + ' / ' + total + ' 页';
-  ctx.fillText(metaLine, A4_W / 2, 78);
+  ctx.fillText(metaLine, A4_W / 2, 84);
 
   var y = HEAD_H + 8;
   ctx.textAlign = 'left';
   page.cats.forEach(function (sec) {
-      var cat = sec.cat;
-      // 分类头
-      ctx.fillStyle = CAT_COLORS[cat] || '#64748b';
-      ctx.beginPath();
-      ctx.arc(28, y + 16, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 19px "Microsoft YaHei","PingFang SC",sans-serif';
-      ctx.fillText(cat + '（' + sec.items.length + '户）', 44, y + 22);
-      y += CAT_H;
+    var cat = sec.cat;
+    // 分类头
+    ctx.fillStyle = CAT_COLORS[cat] || '#64748b';
+    ctx.beginPath();
+    ctx.arc(28, y + 18, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 22px "Microsoft YaHei","PingFang SC",sans-serif';
+    ctx.fillText(cat + '（' + sec.items.length + '户）', 46, y + 25);
+    y += CAT_H;
 
-      // 商户行
+    if (sec.twoCol) {
+      // ====== 双列布局（已上线）======
+      var colW = (A4_W - 56) / 2;  // 每列宽度（含间距）
+      var leftColX = 28;
+      var rightColX = 28 + colW + 0;
+      var halfCount = Math.ceil(sec.items.length / 2);
+      var rowY = y;
+      for (var idx = 0; idx < sec.items.length; idx++) {
+        var col = idx < halfCount ? 0 : 1;
+        var rowInCol = col === 0 ? idx : idx - halfCount;
+        var top = y + rowInCol * ROW_H_2COL;
+        var colX = col === 0 ? leftColX : rightColX;
+
+        // 行底分隔线
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(colX, top + ROW_H_2COL - 1);
+        ctx.lineTo(colX + colW - 8, top + ROW_H_2COL - 1);
+        ctx.stroke();
+
+        // 序号
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '15px "Microsoft YaHei","PingFang SC",sans-serif';
+        ctx.fillText(String(idx + 1), colX, top + 24);
+
+        // 第一行：营业执照名称（加大加粗）
+        var nameX = colX + 30;
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 20px "Microsoft YaHei","PingFang SC",sans-serif';
+        var licMaxW = colW - 30 - 16;
+        var licText = sec.items[idx].license || '—';
+        ctx.fillText(truncateText(ctx, licText, licMaxW), nameX, top + 24);
+
+        // 第二行：客户名称（不加粗，与执照同字号）
+        var isTakeout = TAKEOUT_KITCHENS.indexOf(sec.items[idx].name) >= 0;
+        ctx.fillStyle = '#475569';
+        ctx.font = '20px "Microsoft YaHei","PingFang SC",sans-serif';
+        var nameMaxW = colW - 30 - 16 - (isTakeout ? 72 : 0);
+        var nameText = truncateText(ctx, sec.items[idx].name, nameMaxW);
+        ctx.fillText(nameText, nameX, top + 50);
+
+        // 外卖厨房标签（跟客户名称在第二行）
+        if (isTakeout) {
+          var tagText = '外卖厨房';
+          var tagW2 = 62;
+          var tagX = nameX + ctx.measureText(nameText).width + 8;
+          if (tagX + tagW2 > colX + colW - 8) tagX = colX + colW - 8 - tagW2;
+          ctx.fillStyle = '#ffedd5';
+          roundRect(ctx, tagX, top + 36, tagW2, 20, 4);
+          ctx.fill();
+          ctx.fillStyle = '#c2410c';
+          ctx.font = 'bold 12px "Microsoft YaHei","PingFang SC",sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(tagText, tagX + tagW2 / 2, top + 50);
+          ctx.textAlign = 'left';
+        }
+      }
+      y += halfCount * ROW_H_2COL;
+    } else {
+      // ====== 单列布局（其他分类）======
       sec.items.forEach(function (d, i) {
         var top = y;
         // 行底分隔线
@@ -752,58 +826,59 @@ function drawA4Page(ctx, page, pageIdx, total) {
 
         // 序号
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '13px "Microsoft YaHei","PingFang SC",sans-serif';
-        ctx.fillText(String(i + 1), 28, top + 22);
+        ctx.font = '15px "Microsoft YaHei","PingFang SC",sans-serif';
+        ctx.fillText(String(i + 1), 28, top + 26);
 
-        // 左侧：客户名称+执照（外卖商户预留标签空间，避免标签压字）
-        var nameX = 56;
+        // 第一行：营业执照名称（加大加粗）
+        var nameX = 58;
         var rightW = 380;
-        var isTakeout = TAKEOUT_KITCHENS.indexOf(d.name) >= 0;
         ctx.fillStyle = '#0f172a';
-        ctx.font = 'bold 16px "Microsoft YaHei","PingFang SC",sans-serif';
-        var nameMaxW = A4_W - nameX - rightW - 16 - (isTakeout ? 78 : 0);
-        var nameText = truncateText(ctx, d.name, nameMaxW);
-        ctx.fillText(nameText, nameX, top + 22);
+        ctx.font = 'bold 20px "Microsoft YaHei","PingFang SC",sans-serif';
+        var licMaxW = A4_W - nameX - rightW - 16;
+        var licText = d.license || '—';
+        ctx.fillText(truncateText(ctx, licText, licMaxW), nameX, top + 26);
 
-        // 外卖厨房标签（橙色小标签）
+        // 第二行：客户名称（不加粗，与执照同字号）
+        var isTakeout = TAKEOUT_KITCHENS.indexOf(d.name) >= 0;
+        ctx.fillStyle = '#475569';
+        ctx.font = '20px "Microsoft YaHei","PingFang SC",sans-serif';
+        var nameMaxW = A4_W - nameX - rightW - 16 - (isTakeout ? 82 : 0);
+        var nameText = truncateText(ctx, d.name, nameMaxW);
+        ctx.fillText(nameText, nameX, top + 52);
+
+        // 外卖厨房标签（跟客户名称在第二行）
         if (isTakeout) {
           var tagText = '外卖厨房';
-          var tagW2 = 62;
+          var tagW2 = 66;
           var tagX = nameX + ctx.measureText(nameText).width + 8;
           ctx.fillStyle = '#ffedd5';
-          roundRect(ctx, tagX, top + 8, tagW2, 20, 4);
+          roundRect(ctx, tagX, top + 38, tagW2, 22, 4);
           ctx.fill();
           ctx.fillStyle = '#c2410c';
-          ctx.font = 'bold 11px "Microsoft YaHei","PingFang SC",sans-serif';
+          ctx.font = 'bold 12px "Microsoft YaHei","PingFang SC",sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText(tagText, tagX + tagW2 / 2, top + 22);
+          ctx.fillText(tagText, tagX + tagW2 / 2, top + 52);
           ctx.textAlign = 'left';
         }
 
-        // 执照名称
-        ctx.fillStyle = '#475569';
-        ctx.font = '13px "Microsoft YaHei","PingFang SC",sans-serif';
-        var licText = d.license || '—';
-        ctx.fillText(truncateText(ctx, licText, A4_W - nameX - rightW - 16), nameX, top + 44);
-
-        // 右侧：进度说明/拒绝原因
-        ctx.fillStyle = '#475569';
-        ctx.font = '14px "Microsoft YaHei","PingFang SC",sans-serif';
+        // 右侧：进度说明/拒绝原因（与第一行对齐）
         var descText = d.desc || '—';
         ctx.fillStyle = d.desc ? '#475569' : '#cbd5e1';
+        ctx.font = '15px "Microsoft YaHei","PingFang SC",sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(truncateText(ctx, descText, rightW), A4_W - 28, top + 26);
+        ctx.fillText(truncateText(ctx, descText, rightW), A4_W - 28, top + 30);
         ctx.textAlign = 'left';
 
-y += ROW_H;
+        y += ROW_H;
       });
-    });
+    }
+  });
 
   // 页脚
   ctx.fillStyle = '#94a3b8';
-  ctx.font = '13px "Microsoft YaHei","PingFang SC",sans-serif';
+  ctx.font = '15px "Microsoft YaHei","PingFang SC",sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(PAGE_FOOT, A4_W / 2, A4_H - 22);
+  ctx.fillText(PAGE_FOOT, A4_W / 2, A4_H - 24);
   ctx.textAlign = 'left';
 }
 
