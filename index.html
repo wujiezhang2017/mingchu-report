@@ -96,6 +96,28 @@
   }
   .search-bar input::placeholder { color: #94a3b8; }
 
+  /* 搜索行：输入框 + 导出按钮 */
+  .search-row { display: flex; gap: 8px; align-items: stretch; }
+  .search-row input { flex: 1; min-width: 0; }
+  .btn-export {
+    flex-shrink: 0;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+    font-family: inherit;
+    white-space: nowrap;
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  .btn-export:hover { filter: brightness(1.06); }
+  .btn-export:active { transform: translateY(1px); }
+  .btn-excel { background: linear-gradient(135deg, #16a34a, #22c55e); }
+  .btn-print { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+
   /* Section */
   .section {
     background: #fff;
@@ -234,6 +256,9 @@
     .grid-item .g-license { font-size: 11px; }
     /* 其他分类：手机端保持双列，不居中，名称不换行，说明可换行 */
     .search-bar input { padding: 8px 12px; font-size: 13px; }
+    .search-row { flex-wrap: wrap; }
+    .search-row input { flex: 1 1 100%; }
+    .btn-export { flex: 1 1 auto; padding: 8px 10px; font-size: 13px; }
     /* 其他分类：手机端 flex-wrap，超屏卡片自动占满一行 */
     .card-grid { display: flex; flex-wrap: wrap; }
     .card-item { flex: 1 1 50%; min-width: 0; border-right: 1px solid #d1d5db; padding: 4px 8px; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left; }
@@ -256,7 +281,38 @@
     color: #334155;
     white-space: nowrap;
   }
+
+  /* A4打印图片选择弹窗（毛玻璃） */
+  .modal-mask {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-mask.show { display: flex; }
+  .modal {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: 12px;
+    padding: 18px 20px 16px;
+    max-width: 420px; width: 100%;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  }
+  .modal h3 { font-size: 16px; color: #0f172a; margin-bottom: 12px; text-align: center; }
+  .modal .modal-item {
+    display: block; padding: 11px 14px; margin: 8px 0;
+    background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px;
+    text-decoration: none; color: #1d4ed8; font-size: 14px; font-weight: 600;
+  }
+  .modal .modal-item:hover { background: #dbeafe; }
+  .modal .modal-tip { font-size: 12px; color: #64748b; margin: 10px 0 12px; text-align: center; }
+  .modal .modal-close {
+    width: 100%; padding: 10px; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, #1e6cb6, #2b8fd6); color: #fff;
+    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
 </style>
+<script src="xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -271,11 +327,25 @@
   <div class="summary" id="summary"></div>
   <div class="rate-bar" id="rateBar"></div>
   <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="输入营业执照名字即可搜索，支持模糊搜索" autocomplete="off" />
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="输入营业执照名字即可搜索，支持模糊搜索" autocomplete="off" />
+      <button class="btn-export btn-excel" id="btnExcel" title="导出六榕所全部商铺明细为Excel文件">导出EXCEL</button>
+      <button class="btn-export btn-print" id="btnPrint" title="按分类生成A4打印图片（自动分页、内容少的相邻分类合并）">导出打印图片</button>
+    </div>
   </div>
   <div id="sections"></div>
 
   <div class="footer">明厨亮灶专项行动 · 六榕所辖区 · 中山五营服中心</div>
+</div>
+
+<!-- A4打印图片选择弹窗 -->
+<div class="modal-mask" id="printModal">
+  <div class="modal">
+    <h3>A4打印图片（共<span id="modalPageCount">0</span>页）</h3>
+    <div id="modalList"></div>
+    <div class="modal-tip">点击任一页可在新窗口打开图片，电脑右键“图片另存为”、手机长按可保存</div>
+    <button class="modal-close" id="modalClose">关闭</button>
+  </div>
 </div>
 
 <script>
@@ -294,7 +364,7 @@ const DATA = [
   {name:"牛山爷嫩牛五方",license:"广州市越秀区牛山爷嫩牛五方小吃店",status:"已上线",desc:""},
   {name:"厚切猪扒咖喱饭（虾首富）",license:"广州市越秀区沐铄美食店（个体工商户）",status:"已上线",desc:""},
   {name:"蜀渝拌·重庆凉拌菜（百灵路店）",license:"广州市越秀区中琴凉菜店（个体工商户）",status:"已上线",desc:""},
-  {name:"越秀区布论兹茶饮店",license:"越秀区布论兹茶饮店",status:"已上线",desc:""},
+  {name:"越秀区布论兹茶饮店",license:"越秀区布论兹茶饮店(个人独资)",status:"已上线",desc:""},
   {name:"惠吉东路15号咖啡店",license:"广州市越秀区蜜糖埕食品店（个体工商户）",status:"已上线",desc:""},
   {name:"广州市越秀区卿予美甲店",license:"广州市越秀区卿予美甲店(个体工商户)",status:"已上线",desc:""},
   {name:"广州市越秀区爽口凉拌菜馆",license:"广州市越秀区爽口凉拌菜馆（个体工商户）",status:"已上线",desc:""},
@@ -329,7 +399,7 @@ const DATA = [
   // 已安装 (6)
   {name:"将相王者·黄焖鸡米饭（纪念堂店）",license:"广州市越秀区芋米餐饮店（个体工商户）",status:"已安装",desc:"已装待推流"},
   {name:"威笑鸡煲档",license:"广州市越秀区威笑鸡煲档（个体工商户）",status:"已安装",desc:"需荔湾整改，已填待推流"},
-  {name:"铭记吃鸡",license:"",status:"已安装",desc:""},
+  {name:"铭记吃鸡",license:"",status:"已安装",desc:"已装待推流"},
   {name:"广州市越秀区六榕街水啦餐饮服务店",license:"广州市越秀区六榕街水啦餐饮服务店（个体工商户）",status:"已安装",desc:"食品安全证没下来"},
   {name:"将军东路16号106号铺",license:"",status:"已安装",desc:"食品安全证没下来"},
   {name:"粤酥坊烘焙馆",license:"广州市越秀区粤酥坊烘焙馆（个体工商户）",status:"已安装",desc:"食品安全证没下来"},
@@ -525,6 +595,349 @@ searchInput.addEventListener('input', function() {
 
 // —— 首次渲染 ——
 renderSections(null);
+
+// ============================================================
+// 导出EXCEL：将六榕所全部商铺明细（内嵌数据快照）生成xlsx
+// ============================================================
+// 导出EXCEL：优先下载预生成的真实xlsx文件（兼容微信/下载工具）；
+// 文件不存在时降级为前端即时生成
+// ============================================================
+var STATIC_XLSX = '明厨亮灶专项行动·六榕所辖区跟进汇报.xlsx'; // 预生成真实文件名
+function exportExcelFrontend() {
+  if (typeof XLSX === 'undefined') {
+    alert('导出组件未加载（xlsx.full.min.js），请刷新页面后重试');
+    return;
+  }
+  var header = ['序号', '客户名称', '营业执照名称', '当前状态', '进度/拒绝说明'];
+  var rows = [header];
+  CATEGORIES.forEach(function (cat) {
+    var items = DATA.filter(function (d) { return d.status === cat.key; });
+    items.forEach(function (d, i) {
+      rows.push([i + 1, d.name, d.license || '', d.status, d.desc || '']);
+    });
+  });
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 6 }, { wch: 40 }, { wch: 45 }, { wch: 10 }, { wch: 32 }];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '六榕所跟进');
+  XLSX.writeFile(wb, STATIC_XLSX);
+}
+document.getElementById('btnExcel').addEventListener('click', function () {
+  fetch(STATIC_XLSX, { method: 'HEAD' }).then(function (r) {
+    if (r.ok) {
+      var a = document.createElement('a');
+      a.href = STATIC_XLSX;
+      a.download = STATIC_XLSX;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      exportExcelFrontend();
+    }
+  }).catch(function () { exportExcelFrontend(); });
+});
+
+// ============================================================
+// 导出A4打印图片：按分类绘制A4竖版PNG，自动分页+相邻分类合并
+// ============================================================
+var A4_W = 1240, A4_H = 1754;          // 150dpi A4竖版
+var HEAD_H = 100, CAT_H = 64, ROW_H = 72, ROW_H_2COL = 78, FOOT_H = 56, PAGE_GAP = 30;
+var PAGE_TITLE = '明厨亮灶专项行动 · 六榕所辖区跟进汇报';
+var metaText = (function () {
+  var m = document.querySelector('.header .meta');
+  return m ? m.textContent.replace(/\s+/g, ' ').trim() : '';
+})();
+var PAGE_FOOT = '明厨亮灶专项行动 · 六榕所辖区 · 中山五营服中心';
+var CAT_COLORS = {
+  '已上线': '#10b981', '用户拒绝': '#ef4444', '已安装': '#3b82f6',
+  '已受理': '#f59e0b', '已联系': '#64748b'
+};
+
+// 构建页面：已上线单页双列排满；其他分类单列，放不下开新页、相邻合并
+function buildA4Pages() {
+  var pages = [];
+  CATEGORIES.forEach(function (cat) {
+    var items = DATA.filter(function (d) { return d.status === cat.key; });
+    if (items.length === 0) return;
+    if (cat.key === '已上线') {
+      // 已上线：单独一页，双列排布
+      pages.push({ cats: [{ cat: cat.key, items: items, twoCol: true }] });
+    } else if (cat.key === '已联系') {
+      // 已联系：单独一页（单列），不跟前面挤，避免分拆到两页
+      pages.push({ cats: [{ cat: cat.key, items: items, twoCol: false }] });
+    } else {
+      // 其他分类：单列，逐行排入当前页（可与前页剩余空间合并）
+      var cur = pages.length > 0 ? pages[pages.length - 1] : null;
+      if (!cur || cur.cats[cur.cats.length - 1].twoCol) {
+        cur = { cats: [] }; pages.push(cur);
+      }
+      var used = HEAD_H + FOOT_H;
+      cur.cats.forEach(function (s) {
+        used += CAT_H + (s.items.length * ROW_H);
+      });
+      // 当前页放不下分类头+首行 → 开新页
+      if (cur.cats.length > 0 && used + CAT_H + ROW_H > A4_H - FOOT_H - PAGE_GAP) {
+        cur = { cats: [] }; pages.push(cur); used = HEAD_H + FOOT_H;
+      }
+      var i = 0;
+      while (i < items.length) {
+        if (used + ROW_H > A4_H - FOOT_H - PAGE_GAP) {
+          cur = { cats: [] }; pages.push(cur); used = HEAD_H + FOOT_H;
+        }
+        if (cur.cats.length === 0 || cur.cats[cur.cats.length - 1].cat !== cat.key) {
+          cur.cats.push({ cat: cat.key, items: [], twoCol: false });
+          used += CAT_H;
+        }
+        cur.cats[cur.cats.length - 1].items.push(items[i]);
+        used += ROW_H;
+        i++;
+      }
+    }
+  });
+  return pages;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function truncateText(ctx, text, maxWidth) {
+  if (!text) return '';
+  var t = String(text);
+  if (ctx.measureText(t).width <= maxWidth) return t;
+  var lo = 0, hi = t.length;
+  while (lo < hi) {
+    var mid = (lo + hi + 1) >> 1;
+    if (ctx.measureText(t.slice(0, mid) + '…').width <= maxWidth) lo = mid;
+    else hi = mid - 1;
+  }
+  return t.slice(0, lo) + '…';
+}
+
+function drawA4Page(ctx, page, pageIdx, total) {
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, A4_W, A4_H);
+
+  // 顶部标题栏
+  var grad = ctx.createLinearGradient(0, 0, A4_W, 0);
+  grad.addColorStop(0, '#1e6cb6');
+  grad.addColorStop(1, '#2b8fd6');
+  ctx.fillStyle = grad;
+  roundRect(ctx, 14, 14, A4_W - 28, HEAD_H - 20, 10);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 30px "Microsoft YaHei","PingFang SC",sans-serif';
+  ctx.fillText(PAGE_TITLE, A4_W / 2, 52);
+  ctx.font = '16px "Microsoft YaHei","PingFang SC",sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  var metaLine = metaText + '    第 ' + pageIdx + ' / ' + total + ' 页';
+  ctx.fillText(metaLine, A4_W / 2, 84);
+
+  var y = HEAD_H + 8;
+  ctx.textAlign = 'left';
+  page.cats.forEach(function (sec) {
+    var cat = sec.cat;
+    // 分类头
+    ctx.fillStyle = CAT_COLORS[cat] || '#64748b';
+    ctx.beginPath();
+    ctx.arc(28, y + 18, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 22px "Microsoft YaHei","PingFang SC",sans-serif';
+    ctx.fillText(cat + '（' + sec.items.length + '户）', 46, y + 25);
+    y += CAT_H;
+
+    if (sec.twoCol) {
+      // ====== 双列布局（已上线）======
+      var colW = (A4_W - 56) / 2;  // 每列宽度（含间距）
+      var leftColX = 28;
+      var rightColX = 28 + colW + 0;
+      var halfCount = Math.ceil(sec.items.length / 2);
+      var rowY = y;
+      for (var idx = 0; idx < sec.items.length; idx++) {
+        var col = idx < halfCount ? 0 : 1;
+        var rowInCol = col === 0 ? idx : idx - halfCount;
+        var top = y + rowInCol * ROW_H_2COL;
+        var colX = col === 0 ? leftColX : rightColX;
+
+        // 行底分隔线
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(colX, top + ROW_H_2COL - 1);
+        ctx.lineTo(colX + colW - 8, top + ROW_H_2COL - 1);
+        ctx.stroke();
+
+        // 序号
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '15px "Microsoft YaHei","PingFang SC",sans-serif';
+        ctx.fillText(String(idx + 1), colX, top + 24);
+
+        // 第一行：营业执照名称（加大加粗）
+        var nameX = colX + 30;
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 20px "Microsoft YaHei","PingFang SC",sans-serif';
+        var licMaxW = colW - 30 - 16;
+        var licText = sec.items[idx].license || '—';
+        ctx.fillText(truncateText(ctx, licText, licMaxW), nameX, top + 24);
+
+        // 第二行：客户名称（不加粗，与执照同字号）
+        var isTakeout = TAKEOUT_KITCHENS.indexOf(sec.items[idx].name) >= 0;
+        ctx.fillStyle = '#475569';
+        ctx.font = '20px "Microsoft YaHei","PingFang SC",sans-serif';
+        var nameMaxW = colW - 30 - 16 - (isTakeout ? 72 : 0);
+        var nameText = truncateText(ctx, sec.items[idx].name, nameMaxW);
+        ctx.fillText(nameText, nameX, top + 50);
+
+        // 外卖厨房标签（跟客户名称在第二行）
+        if (isTakeout) {
+          var tagText = '外卖厨房';
+          var tagW2 = 62;
+          var tagX = nameX + ctx.measureText(nameText).width + 8;
+          if (tagX + tagW2 > colX + colW - 8) tagX = colX + colW - 8 - tagW2;
+          ctx.fillStyle = '#ffedd5';
+          roundRect(ctx, tagX, top + 36, tagW2, 20, 4);
+          ctx.fill();
+          ctx.fillStyle = '#c2410c';
+          ctx.font = 'bold 12px "Microsoft YaHei","PingFang SC",sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(tagText, tagX + tagW2 / 2, top + 50);
+          ctx.textAlign = 'left';
+        }
+      }
+      y += halfCount * ROW_H_2COL;
+    } else {
+      // ====== 单列布局（其他分类）======
+      sec.items.forEach(function (d, i) {
+        var top = y;
+        // 行底分隔线
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(24, top + ROW_H - 1);
+        ctx.lineTo(A4_W - 24, top + ROW_H - 1);
+        ctx.stroke();
+
+        // 序号
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '15px "Microsoft YaHei","PingFang SC",sans-serif';
+        ctx.fillText(String(i + 1), 28, top + 26);
+
+        // 第一行：营业执照名称（加大加粗）
+        var nameX = 58;
+        var rightW = 380;
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 20px "Microsoft YaHei","PingFang SC",sans-serif';
+        var licMaxW = A4_W - nameX - rightW - 16;
+        var licText = d.license || '—';
+        ctx.fillText(truncateText(ctx, licText, licMaxW), nameX, top + 26);
+
+        // 第二行：客户名称（不加粗，与执照同字号）
+        var isTakeout = TAKEOUT_KITCHENS.indexOf(d.name) >= 0;
+        ctx.fillStyle = '#475569';
+        ctx.font = '20px "Microsoft YaHei","PingFang SC",sans-serif';
+        var nameMaxW = A4_W - nameX - rightW - 16 - (isTakeout ? 82 : 0);
+        var nameText = truncateText(ctx, d.name, nameMaxW);
+        ctx.fillText(nameText, nameX, top + 52);
+
+        // 外卖厨房标签（跟客户名称在第二行）
+        if (isTakeout) {
+          var tagText = '外卖厨房';
+          var tagW2 = 66;
+          var tagX = nameX + ctx.measureText(nameText).width + 8;
+          ctx.fillStyle = '#ffedd5';
+          roundRect(ctx, tagX, top + 38, tagW2, 22, 4);
+          ctx.fill();
+          ctx.fillStyle = '#c2410c';
+          ctx.font = 'bold 12px "Microsoft YaHei","PingFang SC",sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(tagText, tagX + tagW2 / 2, top + 52);
+          ctx.textAlign = 'left';
+        }
+
+        // 右侧：进度说明/拒绝原因（与第一行对齐）
+        var descText = d.desc || '—';
+        ctx.fillStyle = d.desc ? '#475569' : '#cbd5e1';
+        ctx.font = '15px "Microsoft YaHei","PingFang SC",sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(truncateText(ctx, descText, rightW), A4_W - 28, top + 30);
+        ctx.textAlign = 'left';
+
+        y += ROW_H;
+      });
+    }
+  });
+
+  // 页脚
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '15px "Microsoft YaHei","PingFang SC",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(PAGE_FOOT, A4_W / 2, A4_H - 24);
+  ctx.textAlign = 'left';
+}
+
+function downloadBlob(blob, filename) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function () {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 500);
+}
+
+// ============================================================
+// 导出A4打印图片：优先弹出预生成真实图片列表（兼容微信/下载工具）；
+// 文件不存在时降级为前端即时生成
+// ============================================================
+var STATIC_A4 = ['明厨亮灶-六榕所-A4-第1页.png','明厨亮灶-六榕所-A4-第2页.png','明厨亮灶-六榕所-A4-第3页.png']; // 生成汇报时替换为实际图片文件名数组，如 ['明厨亮灶-六榕所-A4-第1页.png',...]
+function exportPrintImagesFrontend() {
+  var pages = buildA4Pages();
+  if (pages.length === 0) { alert('暂无数据可导出'); return; }
+  pages.forEach(function (pg, idx) {
+    var canvas = document.createElement('canvas');
+    canvas.width = A4_W;
+    canvas.height = A4_H;
+    var ctx = canvas.getContext('2d');
+    drawA4Page(ctx, pg, idx + 1, pages.length);
+    canvas.toBlob(function (blob) {
+      if (blob) downloadBlob(blob, '明厨亮灶-六榕所-A4-第' + (idx + 1) + '页.png');
+    }, 'image/png');
+  });
+}
+function openPrintModal() {
+  var pages = buildA4Pages();
+  var html = '';
+  STATIC_A4.forEach(function (f, i) {
+    var cats = (pages[i] ? pages[i].cats.map(function (s) { return s.cat + ' ' + s.items.length + '户'; }).join('、') : '');
+    html += '<a class="modal-item" href="' + f + '" target="_blank" download="' + f + '">第' + (i + 1) + '页：' + cats + '</a>';
+  });
+  document.getElementById('modalPageCount').textContent = STATIC_A4.length;
+  document.getElementById('modalList').innerHTML = html;
+  document.getElementById('printModal').classList.add('show');
+}
+document.getElementById('modalClose').addEventListener('click', function () {
+  document.getElementById('printModal').classList.remove('show');
+});
+document.getElementById('printModal').addEventListener('click', function (e) {
+  if (e.target === this) this.classList.remove('show');
+});
+document.getElementById('btnPrint').addEventListener('click', function () {
+  if (!STATIC_A4 || STATIC_A4.length === 0) { exportPrintImagesFrontend(); return; }
+  fetch(STATIC_A4[0], { method: 'HEAD' }).then(function (r) {
+    if (r.ok) { openPrintModal(); } else { exportPrintImagesFrontend(); }
+  }).catch(function () { exportPrintImagesFrontend(); });
+});
 </script>
 </body>
 </html>
